@@ -62,24 +62,18 @@ public class HttpConfiguration
                         {
                             try( JsonReader r = Json.createReader( new InputStreamReader( is ) ) )
                             {
-                                JsonObject jo = r.readObject();
-                                LOG.log( Level.INFO, () -> jo.toString() );
-
-                                configuration = new MapConfiguration( MapBuilder.fromJsonObject( jo ).build() );
+                                configuration = new MapConfiguration( MapBuilder.fromJsonObject( r.readObject() ).build() );
                             }
                         }
                         break;
                         
                     default:
-                        LOG.log( Level.INFO, () -> "Error " + uri.getScheme() + "://" + uri.getHost() + uri.getPath()
+                        LOG.log( Level.WARNING, () -> "Error " + uri.getScheme() + "://" + uri.getHost() + uri.getPath()
                                  + " " + response.getStatusLine().getStatusCode() );
                         configuration = EmptyConfiguration.INSTANCE;
                 }
             } catch( IOException ex )
             {
-                // Don't write uri as is as we may expose security details
-                LOG.log( Level.INFO, ex, () -> "Failed retrieve of config " + uri.getScheme() + "://" + uri.getHost() + uri.getPath() );
-
                 throw new UncheckedIOException( ex );
             }
         }
