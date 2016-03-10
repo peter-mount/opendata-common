@@ -40,9 +40,6 @@ public class Kernel
     Event<CommandArguments> startEvent;
     
     private CommandArguments commandArguments;
-    private File homeDir;
-
-    private FileSystem config;
 
     /**
      * Called by main to initialise the Kernel
@@ -55,13 +52,6 @@ public class Kernel
             throws IOException
     {
         commandArguments = () -> args;
-
-//        Path dbProperties = config.getPath( "/database.properties" );
-//        if( Files.exists( dbProperties, LinkOption.NOFOLLOW_LINKS ) ) {
-//            // If database.properties exists then read that for DB config
-//            DataSourceProducer.setFactory( ParserUtils.readProperties( dbProperties ) );
-//            DataSourceProducer.setUseJndi( false );
-//        }
     }
 
     /**

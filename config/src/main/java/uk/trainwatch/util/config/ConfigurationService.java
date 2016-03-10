@@ -5,7 +5,6 @@
  */
 package uk.trainwatch.util.config;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.net.URI;
@@ -123,8 +122,7 @@ public class ConfigurationService
     @Produces
     @GlobalConfiguration("")
     @Dependent
-    Configuration getConfiguration( InjectionPoint injectionPoint
-    )
+    Configuration getConfiguration( InjectionPoint injectionPoint )
     {
         for( Annotation a: injectionPoint.getQualifiers() ) {
             if( a instanceof GlobalConfiguration ) {

@@ -32,10 +32,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
 import javax.sql.DataSource;
 import uk.trainwatch.util.sql.Database;
 import uk.trainwatch.util.sql.SQL;
@@ -45,9 +41,7 @@ import uk.trainwatch.util.sql.SQL;
  * @author peter
  */
 @ApplicationScoped
-@WebListener
 public class RateStatistics
-        implements ServletContextListener
 {
 
     private static final Logger LOG = Logger.getLogger( RateStatistics.class.getName() );
@@ -76,21 +70,6 @@ public class RateStatistics
     void start()
     {
         hostname = getHostName();
-    }
-
-    @Override
-    public synchronized void contextInitialized( ServletContextEvent sce )
-    {
-        // On webapps set it to a default title based on the name
-        if( title == null ) {
-            ServletContext ctx = sce.getServletContext();
-            setTitle( ctx.getContextPath() + " on " + hostname );
-        }
-    }
-
-    @Override
-    public void contextDestroyed( ServletContextEvent sce )
-    {
     }
 
     @PreDestroy
