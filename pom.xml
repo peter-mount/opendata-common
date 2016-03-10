@@ -13,6 +13,7 @@
         <module>config</module>
         <module>core</module>
         <module>opendata-kernel</module>
+        <module>obsolete</module>
     </modules>
     
     <properties>
