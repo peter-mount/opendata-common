@@ -4,3 +4,5 @@
 /opendata-kernel/target/
 /core/nbproject/
 /obsolete/target/
+/brokers/apachemq/target/
+/brokers/rabbitmq/target/

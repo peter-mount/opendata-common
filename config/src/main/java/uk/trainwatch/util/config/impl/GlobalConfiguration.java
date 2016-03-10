@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package uk.trainwatch.util.config;
+package uk.trainwatch.util.config.impl;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

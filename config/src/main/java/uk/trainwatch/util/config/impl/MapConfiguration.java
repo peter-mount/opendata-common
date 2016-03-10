@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.trainwatch.util.config;
+package uk.trainwatch.util.config.impl;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +34,7 @@ import javax.json.JsonString;
 import javax.json.JsonValue;
 import uk.trainwatch.util.CollectionBuilder;
 import uk.trainwatch.util.MapBuilder;
+import uk.trainwatch.util.config.Configuration;
 
 /**
  *

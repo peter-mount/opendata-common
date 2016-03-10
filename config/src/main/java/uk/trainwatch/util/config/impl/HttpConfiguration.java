@@ -3,13 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package uk.trainwatch.util.config;
+package uk.trainwatch.util.config.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.json.Json;
 import javax.json.JsonReader;
 import org.apache.http.HttpResponse;
@@ -17,6 +19,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import uk.trainwatch.util.MapBuilder;
+import uk.trainwatch.util.config.Configuration;
 
 /**
  * Configuration from a remote http server. Authentication is done
@@ -26,6 +29,8 @@ import uk.trainwatch.util.MapBuilder;
 public class HttpConfiguration
         extends ConfigurationWrapper
 {
+
+    private static final Logger LOG = Logger.getLogger( "HttpConfiguration" );
 
     private Configuration configuration;
     private final URI uri;
@@ -38,24 +43,35 @@ public class HttpConfiguration
     @Override
     protected Configuration getConfiguration()
     {
-        if( configuration == null ) {
-            try( CloseableHttpClient client = HttpClients.createDefault() ) {
+        if( configuration == null )
+        {
+            // Don't write uri as is as we may expose security details
+            LOG.log( Level.INFO, () -> "Retrieving config " + uri.getScheme() + "://" + uri.getHost() + "/" + uri.getPath() );
+
+            try( CloseableHttpClient client = HttpClients.createDefault() )
+            {
                 HttpGet get = new HttpGet( uri );
                 get.setHeader( "User-Agent", "Area51 Configuration/1.0" );
                 HttpResponse response = client.execute( get );
-                switch( response.getStatusLine().getStatusCode() ) {
+                switch( response.getStatusLine().getStatusCode() )
+                {
                     case 200:
                     case 304:
-                        try( InputStream is = response.getEntity().getContent() ) {
-                            try( JsonReader r = Json.createReader( new InputStreamReader( is ) ) ) {
+                        try( InputStream is = response.getEntity().getContent() )
+                        {
+                            try( JsonReader r = Json.createReader( new InputStreamReader( is ) ) )
+                            {
                                 configuration = new MapConfiguration( MapBuilder.fromJsonObject( r.readObject() ).readonly().build() );
                             }
                         }
                     default:
                         configuration = EmptyConfiguration.INSTANCE;
                 }
-            }
-            catch( IOException ex ) {
+            } catch( IOException ex )
+            {
+                // Don't write uri as is as we may expose security details
+                LOG.log( Level.INFO, ex, () -> "Failed retrieve of config " + uri.getScheme() + "://" + uri.getHost() + "/" + uri.getPath() );
+
                 throw new UncheckedIOException( ex );
             }
         }

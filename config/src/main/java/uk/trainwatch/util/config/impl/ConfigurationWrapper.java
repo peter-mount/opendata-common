@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package uk.trainwatch.util.config;
+package uk.trainwatch.util.config.impl;
 
 import java.util.Collection;
 import java.util.Map;
@@ -12,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import uk.trainwatch.util.config.Configuration;
 
 /**
  * Configuration from a remote http server. Authentication is done

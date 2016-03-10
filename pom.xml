@@ -9,6 +9,7 @@
     <name>Open Data Commons</name>
     
     <modules>
+        <module>brokers</module>
         <module>cluster</module>
         <module>config</module>
         <module>core</module>

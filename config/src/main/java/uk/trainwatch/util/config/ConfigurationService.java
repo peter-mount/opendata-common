@@ -26,6 +26,10 @@ import javax.json.Json;
 import javax.json.JsonReader;
 import uk.trainwatch.util.MapBuilder;
 import uk.trainwatch.util.URIBuilder;
+import uk.trainwatch.util.config.impl.GlobalConfiguration;
+import uk.trainwatch.util.config.impl.HttpConfiguration;
+import uk.trainwatch.util.config.impl.MapConfiguration;
+import uk.trainwatch.util.config.impl.EmptyConfiguration;
 
 /**
  *

@@ -3,13 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package uk.trainwatch.util.config;
+package uk.trainwatch.util.config.impl;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import uk.trainwatch.util.config.Configuration;
 
 /**
  *
