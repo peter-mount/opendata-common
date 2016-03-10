@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.json.JsonReader;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -46,7 +47,7 @@ public class HttpConfiguration
         if( configuration == null )
         {
             // Don't write uri as is as we may expose security details
-            LOG.log( Level.INFO, () -> "Retrieving config " + uri.getScheme() + "://" + uri.getHost() + "/" + uri.getPath() );
+            LOG.log( Level.INFO, () -> "Retrieving config " + uri.getScheme() + "://" + uri.getHost() + uri.getPath() );
 
             try( CloseableHttpClient client = HttpClients.createDefault() )
             {
@@ -61,16 +62,23 @@ public class HttpConfiguration
                         {
                             try( JsonReader r = Json.createReader( new InputStreamReader( is ) ) )
                             {
-                                configuration = new MapConfiguration( MapBuilder.fromJsonObject( r.readObject() ).readonly().build() );
+                                JsonObject jo = r.readObject();
+                                LOG.log( Level.INFO, () -> jo.toString() );
+
+                                configuration = new MapConfiguration( MapBuilder.fromJsonObject( jo ).build() );
                             }
                         }
+                        break;
+                        
                     default:
+                        LOG.log( Level.INFO, () -> "Error " + uri.getScheme() + "://" + uri.getHost() + uri.getPath()
+                                 + " " + response.getStatusLine().getStatusCode() );
                         configuration = EmptyConfiguration.INSTANCE;
                 }
             } catch( IOException ex )
             {
                 // Don't write uri as is as we may expose security details
-                LOG.log( Level.INFO, ex, () -> "Failed retrieve of config " + uri.getScheme() + "://" + uri.getHost() + "/" + uri.getPath() );
+                LOG.log( Level.INFO, ex, () -> "Failed retrieve of config " + uri.getScheme() + "://" + uri.getHost() + uri.getPath() );
 
                 throw new UncheckedIOException( ex );
             }

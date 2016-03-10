@@ -17,8 +17,6 @@ package uk.trainwatch.util.counter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,10 +29,6 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.sql.DataSource;
-import uk.trainwatch.util.sql.Database;
-import uk.trainwatch.util.sql.SQL;
 
 /**
  *
@@ -46,9 +40,9 @@ public class RateStatistics
 
     private static final Logger LOG = Logger.getLogger( RateStatistics.class.getName() );
 
-    @Database("rail")
-    @Inject
-    private DataSource dataSource;
+//    @Database("rail")
+//    @Inject
+//    private DataSource dataSource;
 
     private ScheduledFuture<?> scheduledFuture;
 
@@ -84,13 +78,13 @@ public class RateStatistics
     {
         LOG.log( Level.FINE, () -> stat.getName() + "=" + value );
         if( value > 0 ) {
-            try( Connection con = dataSource.getConnection();
-                 PreparedStatement ps = SQL.prepare( con, "INSERT INTO report.stats (tm,name,value,host) VALUES (now(),?,?,?)" ) ) {
-                SQL.executeUpdate( ps, stat.getName(), value, hostname );
-            }
-            catch( Throwable ex ) {
-                LOG.log( Level.SEVERE, null, ex );
-            }
+//            try( Connection con = dataSource.getConnection();
+//                 PreparedStatement ps = SQL.prepare( con, "INSERT INTO report.stats (tm,name,value,host) VALUES (now(),?,?,?)" ) ) {
+//                SQL.executeUpdate( ps, stat.getName(), value, hostname );
+//            }
+//            catch( Throwable ex ) {
+//                LOG.log( Level.SEVERE, null, ex );
+//            }
         }
     }
 

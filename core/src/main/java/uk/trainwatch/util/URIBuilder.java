@@ -239,19 +239,19 @@ public interface URIBuilder
             public URI build()
                     throws URISyntaxException
             {
-                if( ssp != null ) {
-                    return new URI( Objects.requireNonNull( scheme, "scheme" ),
-                                    Objects.requireNonNull( ssp, "ssp" ),
-                                    Objects.requireNonNull( fragment, "fragment" ) );
-                }
-
-                if( authority != null ) {
-                    return new URI( Objects.requireNonNull( scheme, "scheme" ),
-                                    Objects.requireNonNull( authority, "authority" ),
-                                    path,
-                                    query,
-                                    fragment );
-                }
+//                if( ssp != null ) {
+//                    return new URI( Objects.requireNonNull( scheme, "scheme" ),
+//                                    Objects.requireNonNull( ssp, "ssp" ),
+//                                    fragment);
+//                }
+//
+//                if( authority != null ) {
+//                    return new URI( Objects.requireNonNull( scheme, "scheme" ),
+//                                    Objects.requireNonNull( authority, "authority" ),
+//                                    path,
+//                                    query,
+//                                    fragment );
+//                }
                 return new URI( Objects.requireNonNull( scheme, "scheme" ),
                                 userInfo,
                                 Objects.requireNonNull( host, "host" ),

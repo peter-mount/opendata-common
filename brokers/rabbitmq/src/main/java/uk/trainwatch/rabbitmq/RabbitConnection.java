@@ -62,8 +62,8 @@ public class RabbitConnection
 
     public RabbitConnection( Configuration config )
     {
-        this( config.getString( "userName" ), config.getString( "password" ),
-              config.getString( "host" ), config.getInt( "port", 0 ),
+        this( config.getString( "username" ), config.getString( "password" ),
+              config.getString( "hostname" ), config.getInt( "port", 0 ),
               config.getString( "vhost", () -> null ) );
     }
 

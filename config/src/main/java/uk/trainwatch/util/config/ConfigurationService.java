@@ -48,15 +48,16 @@ public class ConfigurationService
     @Deprecated
     public static synchronized ConfigurationService getInstance()
     {
-        if( instance == null ) {
+        if( instance == null )
+        {
             instance = new ConfigurationService();
         }
         return instance;
     }
 
     /**
-     * The configuration URI, either CONFIGURATION_URI environment or -Darea51.configuration= to application config server.
-     * If none then we will default to the older database configuration
+     * The configuration URI, either CONFIGURATION_URI environment or -Darea51.configuration= to application config server. If
+     * none then we will default to the older database configuration
      */
     private final String remoteURI = System.getenv().get( "CONFIGURATION_URI" );
     private final String localConfig = System.getenv().getOrDefault( "CONFIGURATION_DIR", System.getProperty( "area51.configuration" ) );
@@ -68,26 +69,31 @@ public class ConfigurationService
 
     private Configuration newConfiguration( String name )
     {
-        if( localConfig != null ) {
-            return newLocalConfiguration( name );
-        }
-        else if( remoteURI != null ) {
+        if( remoteURI != null )
+        {
             return newRemoteConfiguration( name );
+        }
+        if( localConfig != null )
+        {
+            return newLocalConfiguration( name );
         }
         return EmptyConfiguration.INSTANCE;
     }
 
     private Configuration newRemoteConfiguration( String name )
     {
-        try {
+        try
+        {
             URI uri = new URI( remoteURI );
-            if( uri.getQuery() == null ) {
+            if( uri.getQuery() == null )
+            {
                 // Append /table/name.json to path
                 return new HttpConfiguration( URIBuilder.create( uri )
                         .path( String.join( "/", uri.getPath(), name + ".json" ) )
                         .build() );
             }
-            else {
+            else
+            {
                 // Append table=table&name=name to uri
                 return new HttpConfiguration( URIBuilder.create( uri )
                         .query( uri.getQuery() )
@@ -96,8 +102,8 @@ public class ConfigurationService
                         .endQuery()
                         .build() );
             }
-        }
-        catch( URISyntaxException ex ) {
+        } catch( URISyntaxException ex )
+        {
             throw new IllegalArgumentException( ex );
         }
     }
@@ -106,11 +112,13 @@ public class ConfigurationService
     {
         LOG.log( Level.INFO, () -> "Reading local config " + name );
         Path p = Paths.get( localConfig, name + ".json" );
-        if( Files.isRegularFile( p, LinkOption.NOFOLLOW_LINKS ) ) {
-            try( JsonReader r = Json.createReader( Files.newBufferedReader( p, StandardCharsets.UTF_8 ) ) ) {
+        if( Files.isRegularFile( p, LinkOption.NOFOLLOW_LINKS ) )
+        {
+            try( JsonReader r = Json.createReader( Files.newBufferedReader( p, StandardCharsets.UTF_8 ) ) )
+            {
                 return new MapConfiguration( MapBuilder.fromJsonObject( r.readObject() ).build() );
-            }
-            catch( IOException ex ) {
+            } catch( IOException ex )
+            {
                 throw new IllegalArgumentException( ex );
             }
         }
@@ -119,17 +127,18 @@ public class ConfigurationService
 
     /**
      *
-     * @param injectionPoint
-     *                       <p>
+     * @param injectionPoint <p>
      * @return
      */
     @Produces
-    @GlobalConfiguration("")
+    @GlobalConfiguration( "" )
     @Dependent
     Configuration getConfiguration( InjectionPoint injectionPoint )
     {
-        for( Annotation a: injectionPoint.getQualifiers() ) {
-            if( a instanceof GlobalConfiguration ) {
+        for( Annotation a : injectionPoint.getQualifiers() )
+        {
+            if( a instanceof GlobalConfiguration )
+            {
                 return getConfiguration( ((GlobalConfiguration) a).value() );
             }
         }
