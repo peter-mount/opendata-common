@@ -25,7 +25,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
@@ -276,4 +275,11 @@ public class MapConfiguration
         return null;
     }
 
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName()+"["+config+"]";
+    }
+
+    
 }
