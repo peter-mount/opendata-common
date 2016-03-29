@@ -16,15 +16,21 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.Json;
@@ -842,4 +848,87 @@ public class JsonUtils
         return b;
     }
 
+    public static Collector<Object, JsonArrayBuilder, JsonArrayBuilder> collectJsonArray()
+    {
+        return new ArrayCollector();
+    }
+
+    private static class ArrayCollector
+            implements Collector<Object, JsonArrayBuilder, JsonArrayBuilder>
+    {
+
+        @Override
+        public Supplier<JsonArrayBuilder> supplier()
+        {
+            return () -> Json.createArrayBuilder();
+        }
+
+        @Override
+        public BiConsumer<JsonArrayBuilder, Object> accumulator()
+        {
+            return ( a, v ) -> {
+                if( v == null ) {
+                    a.addNull();
+                }
+                else if( v instanceof JsonArrayBuilder ) {
+                    a.add( (JsonArrayBuilder) v );
+                }
+                else if( v instanceof JsonObjectBuilder ) {
+                    a.add( (JsonObjectBuilder) v );
+                }
+                else if( v instanceof String ) {
+                    a.add( (String) v );
+                }
+                else if( v instanceof Integer ) {
+                    a.add( (Integer) v );
+                }
+                else if( v instanceof Long ) {
+                    a.add( (Long) v );
+                }
+                else if( v instanceof Double ) {
+                    a.add( (Double) v );
+                }
+                else if( v instanceof Boolean ) {
+                    a.add( (Boolean) v );
+                }
+                else if( v instanceof JsonValue ) {
+                    a.add( (JsonValue) v );
+                }
+                else if( v instanceof BigDecimal ) {
+                    a.add( (BigDecimal) v );
+                }
+                else if( v instanceof BigInteger ) {
+                    a.add( (BigInteger) v );
+                }
+                else {
+                    throw new UnsupportedOperationException( "Unable to collect " + v );
+                }
+            };
+        }
+
+        @Override
+        public BinaryOperator<JsonArrayBuilder> combiner()
+        {
+            return ( a, b ) -> {
+                b.build().forEach( a::add );
+                return a;
+            };
+        }
+
+        @Override
+        public Function<JsonArrayBuilder, JsonArrayBuilder> finisher()
+        {
+            return Function.identity();
+        }
+
+        private static final Set<Collector.Characteristics> characteristics = Collections.unmodifiableSet( new HashSet<>(
+                Arrays.asList( Collector.Characteristics.IDENTITY_FINISH )
+        ) );
+
+        @Override
+        public Set<Collector.Characteristics> characteristics()
+        {
+            return characteristics;
+        }
+    }
 }
