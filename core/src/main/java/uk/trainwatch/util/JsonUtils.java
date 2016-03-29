@@ -848,9 +848,140 @@ public class JsonUtils
         return b;
     }
 
+    /**
+     * Create a collector that will collect into a JsonArrayBuilder
+     *
+     * @return
+     */
     public static Collector<Object, JsonArrayBuilder, JsonArrayBuilder> collectJsonArray()
     {
         return new ArrayCollector();
+    }
+
+    /**
+     * Create a collector that collects into a JsonObjectBuilder
+     *
+     * @param <T>         Type to collect
+     * @param keyMapper   map the key
+     * @param valueMapper map the value
+     *
+     * @return
+     */
+    public static <T> Collector<T, JsonObjectBuilder, JsonObjectBuilder> collectJsonObject( Function<? super T, String> keyMapper,
+                                                                                            Function<? super T, ? extends Object> valueMapper )
+    {
+        return collectJsonObject( () -> Json.createObjectBuilder(), keyMapper, valueMapper );
+    }
+
+    /**
+     * Create a collector that collects into a JsonObjectBuilder
+     *
+     * @param <T>         Type to collect
+     * @param supplier    supplies the JsonObjectBuilder
+     * @param keyMapper   map the key
+     * @param valueMapper map the value
+     *
+     * @return
+     */
+    public static <T> Collector<T, JsonObjectBuilder, JsonObjectBuilder> collectJsonObject( Supplier<JsonObjectBuilder> supplier,
+                                                                                            Function<? super T, String> keyMapper,
+                                                                                            Function<? super T, ? extends Object> valueMapper )
+    {
+        return new ObjectCollector( supplier, keyMapper, valueMapper );
+    }
+
+    private static class ObjectCollector<T>
+            implements Collector<T, JsonObjectBuilder, JsonObjectBuilder>
+    {
+
+        private final Supplier<JsonObjectBuilder> supplier;
+        private final Function<? super T, String> keyMapper;
+        private final Function<? super T, ? extends Object> valueMapper;
+
+        public ObjectCollector( Supplier<JsonObjectBuilder> supplier, Function<? super T, String> keyMapper, Function<? super T, ? extends Object> valueMapper )
+        {
+            this.supplier = supplier;
+            this.keyMapper = keyMapper;
+            this.valueMapper = valueMapper;
+        }
+
+        @Override
+        public Supplier<JsonObjectBuilder> supplier()
+        {
+            return supplier;
+        }
+
+        @Override
+        public BiConsumer<JsonObjectBuilder, T> accumulator()
+        {
+            return ( a, t ) -> {
+                String k = keyMapper.apply( t );
+                Object v = valueMapper.apply( t );
+
+                if( v == null ) {
+                    a.addNull( k );
+                }
+                else if( v instanceof JsonArrayBuilder ) {
+                    a.add( k, (JsonArrayBuilder) v );
+                }
+                else if( v instanceof JsonObjectBuilder ) {
+                    a.add( k, (JsonObjectBuilder) v );
+                }
+                else if( v instanceof String ) {
+                    a.add( k, (String) v );
+                }
+                else if( v instanceof Integer ) {
+                    a.add( k, (Integer) v );
+                }
+                else if( v instanceof Long ) {
+                    a.add( k, (Long) v );
+                }
+                else if( v instanceof Double ) {
+                    a.add( k, (Double) v );
+                }
+                else if( v instanceof Boolean ) {
+                    a.add( k, (Boolean) v );
+                }
+                else if( v instanceof JsonValue ) {
+                    a.add( k, (JsonValue) v );
+                }
+                else if( v instanceof BigDecimal ) {
+                    a.add( k, (BigDecimal) v );
+                }
+                else if( v instanceof BigInteger ) {
+                    a.add( k, (BigInteger) v );
+                }
+                else {
+                    throw new UnsupportedOperationException( "Unable to collect " + k + "=" + v );
+                }
+            };
+        }
+
+        @Override
+        public BinaryOperator<JsonObjectBuilder> combiner()
+        {
+            return ( a, b ) -> {
+                b.build().forEach( a::add );
+                return a;
+            };
+        }
+
+        @Override
+        public Function<JsonObjectBuilder, JsonObjectBuilder> finisher()
+        {
+            return Function.identity();
+        }
+
+        private static final Set<Collector.Characteristics> characteristics = Collections.unmodifiableSet( new HashSet<>(
+                Arrays.asList( Collector.Characteristics.IDENTITY_FINISH )
+        ) );
+
+        @Override
+        public Set<Collector.Characteristics> characteristics()
+        {
+            return characteristics;
+        }
+
     }
 
     private static class ArrayCollector
