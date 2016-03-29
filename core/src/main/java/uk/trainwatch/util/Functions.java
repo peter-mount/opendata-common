@@ -153,4 +153,22 @@ public class Functions
             }
         };
     }
+
+    /**
+     * Apply one function. if that returns null then use the result of a second
+     *
+     * @param <T>
+     * @param <R>
+     * @param f
+     * @param s
+     *
+     * @return
+     */
+    public static <T, R> Function<T, R> applyWithDefault( Function<T, R> f, Function<T, R> s )
+    {
+        return t -> {
+            R r = f.apply( t );
+            return r == null ? s.apply( t ) : r;
+        };
+    }
 }
