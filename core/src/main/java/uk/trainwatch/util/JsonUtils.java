@@ -1062,4 +1062,24 @@ public class JsonUtils
             return characteristics;
         }
     }
+
+    public static void add( JsonObjectBuilder b, String n, String s )
+    {
+        if( s == null ) {
+            b.addNull( n );
+        }
+        else {
+            b.add( n, s );
+        }
+    }
+
+    public static void add( JsonObjectBuilder b, String n, LocalTime t )
+    {
+        if( t == null ) {
+            b.addNull( n );
+        }
+        else {
+            b.add( n, t.toString() );
+        }
+    }
 }
