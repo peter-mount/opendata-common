@@ -72,12 +72,29 @@ public class TimeUtils
      * Gets the current time in UTC
      * <p>
      * @return
+     * @deprecated use {@link #getUTCDateTime()
      */
+    @Deprecated
     public static final LocalDateTime getLocalDateTime()
     {
         return getLocalDateTime( Instant.now() );
     }
 
+    /**
+     * The current LocalDateTime in UTC
+     *
+     * @return
+     */
+    public static final LocalDateTime getUTCDateTime()
+    {
+        return LocalDateTime.now( UTC );
+    }
+
+    /**
+     * The current LocalDateTime in London
+     *
+     * @return
+     */
     public static final LocalDateTime getLondonDateTime()
     {
         return LocalDateTime.now( LONDON );
@@ -100,11 +117,32 @@ public class TimeUtils
         return LocalDateTime.of( date, LocalTime.MIN );
     }
 
+    /**
+     *
+     * @return
+     * @deprecated use {@link #getUTCDate()
+     */
+    @Deprecated
     public static final LocalDate getLocalDate()
     {
         return getLocalDateTime().toLocalDate();
     }
 
+    /**
+     * The current date in UTC
+     *
+     * @return
+     */
+    public static final LocalDate getUTCDate()
+    {
+        return LocalDate.now( UTC );
+    }
+
+    /**
+     * The current date in London
+     *
+     * @return
+     */
     public static final LocalDate getLondonDate()
     {
         return LocalDate.now( LONDON );
@@ -212,6 +250,26 @@ public class TimeUtils
     public static final LocalTime getLocalTime( final long secondOfDay )
     {
         return LocalTime.ofSecondOfDay( secondOfDay );
+    }
+
+    /**
+     * The current LocalTime in London
+     *
+     * @return
+     */
+    public static final LocalTime getLondonTime()
+    {
+        return LocalTime.now( LONDON );
+    }
+
+    /**
+     * The current LocalTime in UTC
+     *
+     * @return
+     */
+    public static final LocalTime getUTCTime()
+    {
+        return LocalTime.now( UTC );
     }
 
     /**
