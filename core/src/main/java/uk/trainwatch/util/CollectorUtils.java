@@ -29,22 +29,37 @@ public class CollectorUtils
 
     /**
      * A collector that collects the last element on a stream. The output of this collector is an {@link Optional} as we may not have an entry.
-     * 
+     *
      * @param <T> Type of value to collect
      *
      * @return Collector
      */
     public static <T> Collector<T, ?, Optional<T>> findLast()
     {
-        class V
-        {
-
-            Optional opt = Optional.empty();
-        }
-        return Collector.<T, V, Optional<T>>of( () -> new V(),
-                                                ( a, t ) -> a.opt = Optional.ofNullable( t ),
-                                                ( a, b ) -> a.opt.isPresent() ? a : b,
-                                                a -> a.opt );
+        return Collector.<T, OptionalAccumulator<T>, Optional<T>>of( OptionalAccumulator::new,
+                                                                     OptionalAccumulator::accumulate,
+                                                                     OptionalAccumulator::combine,
+                                                                     OptionalAccumulator::finish );
     }
 
+    private static class OptionalAccumulator<T>
+    {
+
+        private Optional<T> opt = Optional.empty();
+
+        public void accumulate( T v )
+        {
+            opt = Optional.ofNullable( v );
+        }
+
+        public OptionalAccumulator<T> combine( OptionalAccumulator<T> b )
+        {
+            return opt.isPresent() ? this : b;
+        }
+
+        public Optional<T> finish()
+        {
+            return opt;
+        }
+    }
 }
