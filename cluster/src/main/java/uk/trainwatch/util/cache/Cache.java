@@ -15,16 +15,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collector;
-import uk.trainwatch.util.CollectorUtils;
 import uk.trainwatch.util.DaemonThreadFactory;
 import uk.trainwatch.util.Functions;
-import uk.trainwatch.util.LocalDateTimeRange;
 import uk.trainwatch.util.sql.ConcurrentSQLHashMap;
 import uk.trainwatch.util.sql.SQLBiConsumer;
 import uk.trainwatch.util.sql.SQLBiFunction;
@@ -542,47 +539,13 @@ public class Cache<K, V>
     /**
      * Returns a {@link Collector} that will populate this cache
      * <p>
-     * @param <T>         Type of input into the collector
-     * @param keyMapper   Mapping function to generate the key from T
-     * @param valueMapper Mapping function to generate the value from T
-     * <p>
-     * @return Collector
-     */
-    public <T> Collector<T, ?, V> collect( Function<T, K> keyMapper, Function<T, V> valueMapper )
-    {
-        return collect( keyMapper, valueMapper, Functions.writeOnceBinaryOperator() );
-    }
-
-    /**
-     * Returns a {@link Collector} that will populate this cache
-     * <p>
-     * @param <T>         Type of input into the collector
-     * @param keyMapper   Mapping function to generate the key from T
-     * @param valueMapper Mapping function to generate the value from T
-     * <p>
-     * @return Collector
-     */
-    public <T> Collector<T, K, V> collect( Function<T, K> keyMapper, Function<T, V> valueMapper, BinaryOperator<K> combiner )
-    {
-        return CollectorUtils.collector( () -> null,
-                                         ( n, t ) -> computeIfAbsent( keyMapper.apply( t ), k -> valueMapper.apply( t ) ),
-                                         combiner,
-                                         CollectorUtils.IDENTITY_CHARACTERISTICS );
-    }
-
-    /**
-     * Returns a {@link Collector} that will populate this cache
-     * <p>
      * @param keyMapper Mapping function to generate the key from the value
      * <p>
      * @return Collector
      */
     public Collector<V, ?, V> collect( Function<V, K> keyMapper )
     {
-        return CollectorUtils.
-                identityCollector( () -> null,
-                                   ( n, t ) -> computeIfAbsent( keyMapper.apply( t ), k -> t ),
-                                   Functions.writeOnceBinaryOperator() );
+        return Collector.of( () -> null, ( n, t ) -> computeIfAbsent( keyMapper.apply( t ), k -> t ), Functions.writeOnceBinaryOperator() );
     }
 
     private static class CacheEntry<K, V>

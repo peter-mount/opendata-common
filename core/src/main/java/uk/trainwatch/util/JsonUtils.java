@@ -16,14 +16,10 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.time.temporal.Temporal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -126,9 +122,7 @@ public class JsonUtils
      */
     public static JsonArray emptyArray()
     {
-        return Json.createArrayBuilder().
-                build();
-
+        return Json.createArrayBuilder().build();
     }
 
     /**
@@ -155,6 +149,7 @@ public class JsonUtils
      * <p>
      * @return Stream, never null
      */
+    @Deprecated
     public static <T extends JsonValue> Stream<T> stream( JsonArray a )
     {
         if( a == null || a.isEmpty() ) {
@@ -173,6 +168,7 @@ public class JsonUtils
      * <p>
      * @return Stream, never null
      */
+    @Deprecated
     public static <T extends JsonValue> Stream<T> stream( JsonObject o )
     {
         if( o == null || o.isEmpty() ) {
@@ -192,11 +188,13 @@ public class JsonUtils
      * <p>
      * @return Stream, never null
      */
+    @Deprecated
     public static <T extends JsonValue> Stream<T> stream( JsonObject o, String n )
     {
         return stream( o.getJsonArray( n ) );
     }
 
+    @Deprecated
     public static void forEachJsonArray( JsonArray a, Consumer<? super JsonArray> c )
     {
         a.forEach( o -> {
@@ -206,6 +204,7 @@ public class JsonUtils
         } );
     }
 
+    @Deprecated
     public static void forEachJsonArray( JsonObject a, Consumer<? super JsonArray> c )
     {
         a.values()
@@ -216,6 +215,7 @@ public class JsonUtils
                 } );
     }
 
+    @Deprecated
     public static void forEachJsonObject( JsonArray a, Consumer<? super JsonObject> c )
     {
         a.forEach( o -> {
@@ -225,6 +225,7 @@ public class JsonUtils
         } );
     }
 
+    @Deprecated
     public static void forEachJsonObject( JsonObject a, Consumer<? super JsonObject> c )
     {
         a.values()
@@ -235,111 +236,125 @@ public class JsonUtils
                 } );
     }
 
+    /**
+     * Return a value from a {@link JsonObject} allowing for nulls.
+     * <p>
+     * If the map contains null, an empty ("") string or a value that cannot be converted from a {@link JsonNumber} then the default value is returned.
+     * <p>
+     * If the value is a {@link JsonArray} or {@link JsonObject} then this will also return the default.
+     *
+     * @param <T>          Required type
+     * @param o            {@link JsonObject}
+     * @param n            key
+     * @param num          mapping function for {@link JsonNumber} to T
+     * @param str          mapping function for a String to T
+     * @param t            supplier for value for boolean true
+     * @param f            supplier for value for boolean false
+     * @param defaultValue supplier of default value
+     *
+     * @return value
+     */
+    public static <T> T get( JsonObject o, String n, Function<JsonNumber, T> num, Function<String, T> str, Supplier<T> t, Supplier<T> f,
+                             Supplier<T> defaultValue )
+    {
+        JsonValue v = o.get( n );
+        if( v == null ) {
+            return defaultValue.get();
+        }
+        switch( v.getValueType() ) {
+            case NUMBER:
+                return num.apply( (JsonNumber) v );
+
+            case STRING:
+                String s = ((JsonString) v).getString();
+                if( s.isEmpty() ) {
+                    return defaultValue.get();
+                }
+                try {
+                    return str.apply( s );
+                }
+                catch( NumberFormatException ex ) {
+                    LOG.log( Level.INFO, ex, () -> "" + s );
+                    return defaultValue.get();
+                }
+
+            case TRUE:
+                return t.get();
+
+            case FALSE:
+                return f.get();
+
+            case NULL:
+            case ARRAY:
+            case OBJECT:
+            default:
+                return defaultValue.get();
+        }
+    }
+
     public static int getInt( JsonObject o, String n )
     {
-        return getInt( o, n, 0 );
+        return getInt( o, n, () -> 0 );
     }
 
     public static Integer getInt( JsonObject o, String n, Integer defaultValue )
     {
-        JsonValue v = o.get( n );
-        if( v == null ) {
-            return defaultValue;
-        }
-        switch( v.getValueType() ) {
-            case NUMBER:
-                JsonNumber jn = (JsonNumber) v;
-                return jn.intValue();
-            case STRING:
-                String s = getString( v );
-                if( s.isEmpty() ) {
-                    return defaultValue;
-                }
-                try {
-                    return Integer.parseInt( s );
-                }
-                catch( NumberFormatException ex ) {
-                    LOG.log( Level.INFO, ex, () -> "" + s );
-                    return defaultValue;
-                }
-            case TRUE:
-                return 1;
-            case FALSE:
-                return 0;
-            case NULL:
-                return defaultValue;
-            default:
-                throw new ClassCastException( "Cannot convert " + v.getClass() + " to Integer" );
-        }
+        return getInt( o, n, () -> defaultValue );
+    }
+
+    public static Integer getInt( JsonObject o, String n, Supplier<Integer> defaultValue )
+    {
+        return get( o, n, JsonNumber::intValue, Integer::parseInt, () -> 1, () -> 0, defaultValue );
     }
 
     public static long getLong( JsonObject o, String n )
     {
-        return getLong( o, n, 0L );
+        return getLong( o, n, () -> 0L );
     }
 
     public static Long getLong( JsonObject o, String n, Long defaultValue )
     {
-        JsonValue v = o.get( n );
-        if( v == null ) {
-            return defaultValue;
-        }
-        switch( v.getValueType() ) {
-            case NUMBER:
-                JsonNumber jn = (JsonNumber) v;
-                return jn.longValue();
-            case STRING:
-                String s = getString( v );
-                if( s.isEmpty() ) {
-                    return defaultValue;
-                }
-                try {
-                    return Long.parseLong( s );
-                }
-                catch( NumberFormatException ex ) {
-                    return defaultValue;
-                }
-            case TRUE:
-                return 1L;
-            case FALSE:
-                return 0L;
-            case NULL:
-                return defaultValue;
-            default:
-                throw new ClassCastException( "Cannot convert " + v.getClass() + " to Long" );
-        }
+        return getLong( o, n, () -> defaultValue );
+    }
+
+    public static Long getLong( JsonObject o, String n, Supplier<Long> defaultValue )
+    {
+        return get( o, n, JsonNumber::longValue, Long::parseLong, () -> 1L, () -> 0L, defaultValue );
+    }
+
+    public static double getDouble( JsonObject o, String n )
+    {
+        return getDouble( o, n, () -> 0.0 );
     }
 
     public static Double getDouble( JsonObject o, String n, Double defaultValue )
     {
-        JsonValue v = o.get( n );
-        if( v == null ) {
-            return defaultValue;
-        }
-        switch( v.getValueType() ) {
-            case NUMBER:
-                JsonNumber jn = (JsonNumber) v;
-                return jn.doubleValue();
-            case STRING:
-                String s = getString( v );
-                if( s.isEmpty() ) {
-                    return defaultValue;
-                }
-                try {
-                    return Double.parseDouble( s );
-                }
-                catch( NumberFormatException ex ) {
-                    return defaultValue;
-                }
-            case TRUE:
-                return 1.0;
-            case FALSE:
-                return 0.0;
-            case NULL:
-                return defaultValue;
-            default:
-                throw new ClassCastException( "Cannot convert " + v.getClass() + " to Double" );
-        }
+        return getDouble( o, n, () -> defaultValue );
+    }
+
+    public static Double getDouble( JsonObject o, String n, Supplier<Double> defaultValue )
+    {
+        return get( o, n, JsonNumber::doubleValue, Double::parseDouble, () -> 1.0, () -> 0.0, defaultValue );
+    }
+
+    public static BigDecimal getBigDecimal( JsonObject o, String n )
+    {
+        return getBigDecimal( o, n, () -> BigDecimal.ZERO );
+    }
+
+    public static BigDecimal getBigDecimal( JsonObject o, String n, Supplier<BigDecimal> defaultValue )
+    {
+        return get( o, n, JsonNumber::bigDecimalValue, BigDecimal::new, () -> BigDecimal.ONE, () -> BigDecimal.ZERO, defaultValue );
+    }
+
+    public static BigInteger getBigInteger( JsonObject o, String n )
+    {
+        return getBigInteger( o, n, () -> BigInteger.ZERO );
+    }
+
+    public static BigInteger getBigInteger( JsonObject o, String n, Supplier<BigInteger> defaultValue )
+    {
+        return get( o, n, JsonNumber::bigIntegerValue, BigInteger::new, () -> BigInteger.ONE, () -> BigInteger.ZERO, defaultValue );
     }
 
     public static String getString( JsonValue v )
@@ -845,7 +860,86 @@ public class JsonUtils
         else if( v instanceof char[] ) {
             b.add( k, String.valueOf( (char[]) v ) );
         }
+        else if( v instanceof JsonArrayBuilder ) {
+            b.add( k, (JsonArrayBuilder) v );
+        }
+        else if( v instanceof JsonObjectBuilder ) {
+            b.add( k, (JsonObjectBuilder) v );
+        }
+        else if( v instanceof Temporal ) {
+            b.add( k, v.toString() );
+        }
         return b;
+    }
+
+    public static JsonArrayBuilder add( JsonArrayBuilder b, Object v )
+    {
+        Objects.requireNonNull( b );
+        if( v == null ) {
+            b.addNull();
+        }
+        else if( v instanceof CharSequence ) {
+            b.add( String.valueOf( v ) );
+        }
+        else if( v instanceof Number ) {
+            Number n = (Number) v;
+            if( v instanceof Integer ) {
+                b.add( n.intValue() );
+            }
+            else if( v instanceof Double || v instanceof Float ) {
+                b.add( n.doubleValue() );
+            }
+            else if( v instanceof Long ) {
+                b.add( n.longValue() );
+            }
+            else if( v instanceof Integer ) {
+                b.add( n.intValue() );
+            }
+            else if( v instanceof BigDecimal ) {
+                b.add( (BigDecimal) v );
+            }
+            else if( v instanceof BigInteger ) {
+                b.add( (BigInteger) v );
+            }
+        }
+        else if( v instanceof Boolean ) {
+            b.add( (Boolean) v );
+        }
+        else if( v instanceof char[] ) {
+            b.add( String.valueOf( (char[]) v ) );
+        }
+        else if( v instanceof JsonArrayBuilder ) {
+            b.add( (JsonArrayBuilder) v );
+        }
+        else if( v instanceof JsonObjectBuilder ) {
+            b.add( (JsonObjectBuilder) v );
+        }
+        else if( v instanceof Temporal ) {
+            b.add( v.toString() );
+        }
+        return b;
+    }
+
+    public static JsonObjectBuilder addAll( JsonObjectBuilder a, JsonObjectBuilder b )
+    {
+        return addAll( a, b.build() );
+    }
+
+    public static JsonObjectBuilder addAll( JsonObjectBuilder a, JsonObject b )
+    {
+        b.forEach( a::add );
+        return a;
+    }
+
+    public static JsonArrayBuilder addAll( JsonArrayBuilder a, JsonArrayBuilder b )
+    {
+        return addAll( a, b.build() );
+    }
+
+    public static JsonArrayBuilder addAll( JsonArrayBuilder a, JsonArray b )
+    {
+        b.forEach( a::add );
+        return a;
     }
 
     /**
@@ -855,7 +949,19 @@ public class JsonUtils
      */
     public static Collector<Object, JsonArrayBuilder, JsonArrayBuilder> collectJsonArray()
     {
-        return new ArrayCollector();
+        return collectJsonArray( Json::createArrayBuilder );
+    }
+
+    /**
+     * Create a collector that will collect into a JsonArrayBuilder
+     *
+     * @param supplier supplier of a JsonArrayBuilder
+     *
+     * @return
+     */
+    public static Collector<Object, JsonArrayBuilder, JsonArrayBuilder> collectJsonArray( Supplier<JsonArrayBuilder> supplier )
+    {
+        return Collector.of( supplier, JsonUtils::add, JsonUtils::addAll );
     }
 
     /**
@@ -870,7 +976,7 @@ public class JsonUtils
     public static <T> Collector<T, JsonObjectBuilder, JsonObjectBuilder> collectJsonObject( Function<? super T, String> keyMapper,
                                                                                             Function<? super T, ? extends Object> valueMapper )
     {
-        return collectJsonObject( () -> Json.createObjectBuilder(), keyMapper, valueMapper );
+        return collectJsonObject( Json::createObjectBuilder, keyMapper, valueMapper );
     }
 
     /**
@@ -887,199 +993,7 @@ public class JsonUtils
                                                                                             Function<? super T, String> keyMapper,
                                                                                             Function<? super T, ? extends Object> valueMapper )
     {
-        return new ObjectCollector( supplier, keyMapper, valueMapper );
+        return Collector.of( supplier, ( a, t ) -> add( a, keyMapper.apply( t ), valueMapper.apply( t ) ), JsonUtils::addAll );
     }
 
-    private static class ObjectCollector<T>
-            implements Collector<T, JsonObjectBuilder, JsonObjectBuilder>
-    {
-
-        private final Supplier<JsonObjectBuilder> supplier;
-        private final Function<? super T, String> keyMapper;
-        private final Function<? super T, ? extends Object> valueMapper;
-
-        public ObjectCollector( Supplier<JsonObjectBuilder> supplier, Function<? super T, String> keyMapper, Function<? super T, ? extends Object> valueMapper )
-        {
-            this.supplier = supplier;
-            this.keyMapper = keyMapper;
-            this.valueMapper = valueMapper;
-        }
-
-        @Override
-        public Supplier<JsonObjectBuilder> supplier()
-        {
-            return supplier;
-        }
-
-        @Override
-        public BiConsumer<JsonObjectBuilder, T> accumulator()
-        {
-            return ( a, t ) -> {
-                String k = keyMapper.apply( t );
-                Object v = valueMapper.apply( t );
-
-                if( v == null ) {
-                    a.addNull( k );
-                }
-                else if( v instanceof JsonArrayBuilder ) {
-                    a.add( k, (JsonArrayBuilder) v );
-                }
-                else if( v instanceof JsonObjectBuilder ) {
-                    a.add( k, (JsonObjectBuilder) v );
-                }
-                else if( v instanceof String ) {
-                    a.add( k, (String) v );
-                }
-                else if( v instanceof Integer ) {
-                    a.add( k, (Integer) v );
-                }
-                else if( v instanceof Long ) {
-                    a.add( k, (Long) v );
-                }
-                else if( v instanceof Double ) {
-                    a.add( k, (Double) v );
-                }
-                else if( v instanceof Boolean ) {
-                    a.add( k, (Boolean) v );
-                }
-                else if( v instanceof JsonValue ) {
-                    a.add( k, (JsonValue) v );
-                }
-                else if( v instanceof BigDecimal ) {
-                    a.add( k, (BigDecimal) v );
-                }
-                else if( v instanceof BigInteger ) {
-                    a.add( k, (BigInteger) v );
-                }
-                else {
-                    throw new UnsupportedOperationException( "Unable to collect " + k + "=" + v );
-                }
-            };
-        }
-
-        @Override
-        public BinaryOperator<JsonObjectBuilder> combiner()
-        {
-            return ( a, b ) -> {
-                b.build().forEach( a::add );
-                return a;
-            };
-        }
-
-        @Override
-        public Function<JsonObjectBuilder, JsonObjectBuilder> finisher()
-        {
-            return Function.identity();
-        }
-
-        private static final Set<Collector.Characteristics> characteristics = Collections.unmodifiableSet( new HashSet<>(
-                Arrays.asList( Collector.Characteristics.IDENTITY_FINISH )
-        ) );
-
-        @Override
-        public Set<Collector.Characteristics> characteristics()
-        {
-            return characteristics;
-        }
-
-    }
-
-    private static class ArrayCollector
-            implements Collector<Object, JsonArrayBuilder, JsonArrayBuilder>
-    {
-
-        @Override
-        public Supplier<JsonArrayBuilder> supplier()
-        {
-            return () -> Json.createArrayBuilder();
-        }
-
-        @Override
-        public BiConsumer<JsonArrayBuilder, Object> accumulator()
-        {
-            return ( a, v ) -> {
-                if( v == null ) {
-                    a.addNull();
-                }
-                else if( v instanceof JsonArrayBuilder ) {
-                    a.add( (JsonArrayBuilder) v );
-                }
-                else if( v instanceof JsonObjectBuilder ) {
-                    a.add( (JsonObjectBuilder) v );
-                }
-                else if( v instanceof String ) {
-                    a.add( (String) v );
-                }
-                else if( v instanceof Integer ) {
-                    a.add( (Integer) v );
-                }
-                else if( v instanceof Long ) {
-                    a.add( (Long) v );
-                }
-                else if( v instanceof Double ) {
-                    a.add( (Double) v );
-                }
-                else if( v instanceof Boolean ) {
-                    a.add( (Boolean) v );
-                }
-                else if( v instanceof JsonValue ) {
-                    a.add( (JsonValue) v );
-                }
-                else if( v instanceof BigDecimal ) {
-                    a.add( (BigDecimal) v );
-                }
-                else if( v instanceof BigInteger ) {
-                    a.add( (BigInteger) v );
-                }
-                else {
-                    throw new UnsupportedOperationException( "Unable to collect " + v );
-                }
-            };
-        }
-
-        @Override
-        public BinaryOperator<JsonArrayBuilder> combiner()
-        {
-            return ( a, b ) -> {
-                b.build().forEach( a::add );
-                return a;
-            };
-        }
-
-        @Override
-        public Function<JsonArrayBuilder, JsonArrayBuilder> finisher()
-        {
-            return Function.identity();
-        }
-
-        private static final Set<Collector.Characteristics> characteristics = Collections.unmodifiableSet( new HashSet<>(
-                Arrays.asList( Collector.Characteristics.IDENTITY_FINISH )
-        ) );
-
-        @Override
-        public Set<Collector.Characteristics> characteristics()
-        {
-            return characteristics;
-        }
-    }
-
-    public static void add( JsonObjectBuilder b, String n, String s )
-    {
-        if( s == null ) {
-            b.addNull( n );
-        }
-        else {
-            b.add( n, s );
-        }
-    }
-
-    public static void add( JsonObjectBuilder b, String n, LocalTime t )
-    {
-        if( t == null ) {
-            b.addNull( n );
-        }
-        else {
-            b.add( n, t.toString() );
-        }
-    }
 }
