@@ -818,6 +818,26 @@ public class JsonUtils
      * @param b builder
      * @param k key
      * @param v value
+     * @param f mapping function
+     *
+     * @return builder
+     *
+     * @throws NullPointerException if either builder or key is null.
+     */
+    public static <T> JsonObjectBuilder add( JsonObjectBuilder b, String k, T v, Function<T, Object> f )
+    {
+        Objects.requireNonNull( b );
+        return v == null ? b.addNull( k ) : add( b, k, f.apply( v ) );
+    }
+
+    /**
+     * Add an object to a JsonObjectBuilder.
+     * <p>
+     * This will attempt to resolve the Json type
+     *
+     * @param b builder
+     * @param k key
+     * @param v value
      *
      * @return builder
      *
@@ -872,6 +892,12 @@ public class JsonUtils
         return b;
     }
 
+    public static <T> JsonArrayBuilder add( JsonArrayBuilder b, T v, Function<T, Object> f )
+    {
+        Objects.requireNonNull( b );
+        return v == null ? b.addNull() : add( b, f.apply( v ) );
+    }
+
     public static JsonArrayBuilder add( JsonArrayBuilder b, Object v )
     {
         Objects.requireNonNull( b );
@@ -922,22 +948,30 @@ public class JsonUtils
 
     public static JsonObjectBuilder addAll( JsonObjectBuilder a, JsonObjectBuilder b )
     {
+        Objects.requireNonNull( a );
+        Objects.requireNonNull( b );
         return addAll( a, b.build() );
     }
 
     public static JsonObjectBuilder addAll( JsonObjectBuilder a, JsonObject b )
     {
+        Objects.requireNonNull( a );
+        Objects.requireNonNull( b );
         b.forEach( a::add );
         return a;
     }
 
     public static JsonArrayBuilder addAll( JsonArrayBuilder a, JsonArrayBuilder b )
     {
+        Objects.requireNonNull( a );
+        Objects.requireNonNull( b );
         return addAll( a, b.build() );
     }
 
     public static JsonArrayBuilder addAll( JsonArrayBuilder a, JsonArray b )
     {
+        Objects.requireNonNull( a );
+        Objects.requireNonNull( b );
         b.forEach( a::add );
         return a;
     }
