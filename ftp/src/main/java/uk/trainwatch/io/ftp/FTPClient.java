@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -50,31 +51,16 @@ public interface FTPClient
         extends Closeable
 {
 
-    /**
-     * Connect
-     * <p>
-     * @param server host name
-     * <p>
-     * @throws IOException
-     */
-    default void connect( String server )
-            throws IOException
+    static FTPClientBuilder builder()
     {
-        connect( server, 0 );
+        return new FTPClientBuilder();
     }
 
-    /**
-     * Connect
-     * <p>
-     * @param server host name
-     * @param port   remote port
-     * <p>
-     * @throws IOException
-     */
-    void connect( String server, int port )
+    void connect()
             throws IOException;
 
-    boolean isConnected();
+    boolean isConnected()
+            throws IOException;
 
     /**
      * Log in to the remote server
@@ -84,24 +70,31 @@ public interface FTPClient
      * <p>
      * @throws IOException
      */
-    void login( String username, String password )
+    void login()
             throws IOException;
 
     /**
      * Log a message to the logger if there is one
      * <p>
      * @param msg
+     *
+     * @throws java.io.IOException
      */
-    void log( Supplier<String> msg );
+    void log( Supplier<String> msg )
+            throws IOException;
 
     /**
      * Log a message to the logger if there is one
      * <p>
      * @param msg
+     *
+     * @throws java.io.IOException
      */
-    void log( String msg );
+    void log( String msg )
+            throws IOException;
 
-    boolean isLoggedIn();
+    boolean isLoggedIn()
+            throws IOException;
 
     /**
      * Append an InputStream to a remote file
@@ -266,6 +259,29 @@ public interface FTPClient
         finally {
             completePendingCommand();
         }
+    }
+
+    default boolean retrieveIfNeeded( Optional<FTPFile> remote, Path target, CopyOption... options )
+            throws IOException
+    {
+        return remote.isPresent() && retrieveIfNeeded( remote.get(), target, options );
+    }
+
+    default boolean retrieveIfNeeded( FTPFile remote, Path target, CopyOption... options )
+            throws IOException
+    {
+        if( remote != null && target != null && isPathRetrievable( target, remote ) ) {
+            try( InputStream is = retrieveFileStream( remote ) ) {
+                if( is == null ) {
+                    throw new FileNotFoundException( target.toString() );
+                }
+                Files.copy( is, target, options );
+            }
+            finally {
+                completePendingCommand();
+            }
+        }
+        return Files.exists( target, LinkOption.NOFOLLOW_LINKS ) && Files.isRegularFile( target, LinkOption.NOFOLLOW_LINKS );
     }
 
     /**
@@ -789,8 +805,10 @@ public interface FTPClient
      * @param ftp
      *             <p>
      * @return
+     * @throws java.io.IOException
      */
     default boolean isFileRetrievable( File file, FTPFile ftp )
+            throws IOException
     {
         return !file.exists()
                || file.length() != ftp.getSize()
@@ -806,6 +824,7 @@ public interface FTPClient
      * @param ftp
      *             <p>
      * @return
+     * @throws java.io.IOException
      */
     default boolean isPathRetrievable( Path file, FTPFile ftp )
             throws IOException
@@ -815,4 +834,18 @@ public interface FTPClient
                || Files.getLastModifiedTime( file, LinkOption.NOFOLLOW_LINKS ).toMillis() < ftp.getTimestamp().getTimeInMillis();
     }
 
+    <T> T getAttribute( String n )
+            throws IOException;
+
+    void setAttribute( String n, Object v )
+            throws IOException;
+
+    boolean isAttributePresent( String n )
+            throws IOException;
+
+    default boolean getBooleanAttribute( String n )
+            throws IOException
+    {
+        return Boolean.TRUE.equals( getAttribute( n ) );
+    }
 }

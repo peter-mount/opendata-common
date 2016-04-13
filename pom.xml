@@ -13,8 +13,7 @@
         <module>cluster</module>
         <module>config</module>
         <module>core</module>
-        <module>opendata-kernel</module>
-        <module>obsolete</module>
+        <module>ftp</module>
         <module>scheduler</module>
     </modules>
     

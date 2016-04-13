@@ -15,7 +15,17 @@
  */
 package uk.trainwatch.io.ftp;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
+import uk.trainwatch.io.IOAction;
+import uk.trainwatch.io.IOBiConsumer;
+import uk.trainwatch.io.IOConsumer;
+import uk.trainwatch.io.IOFunction;
+import uk.trainwatch.io.IOPredicate;
+import uk.trainwatch.io.IOSupplier;
 import uk.trainwatch.util.Consumers;
 
 public class FTPClientBuilder
@@ -25,6 +35,9 @@ public class FTPClientBuilder
     int proxyPort;
     String proxyUser;
     String proxyPass;
+
+    IOConsumer<DefaultFTPClient> connect;
+    IOPredicate<DefaultFTPClient> login;
 
     Consumer<String> consumer;
     boolean printCommands;
@@ -37,6 +50,39 @@ public class FTPClientBuilder
 
     boolean binaryTransfer = true;
     boolean listHiddenFiles = false;
+    final Map<String, Object> attributes = new HashMap<>();
+    IOBiConsumer<FTPClient, IOAction.Builder> action = null;
+
+    public FTPClientBuilder addAction( IOBiConsumer<FTPClient, IOAction.Builder> action )
+    {
+        this.action = this.action == null ? action : this.action.andThen( action );
+        return this;
+    }
+
+    /**
+     * Perform some action on the FTPClient
+     *
+     * @param action
+     *
+     * @return
+     */
+    public FTPClientBuilder invoke( IOConsumer<FTPClient> action )
+    {
+        return addAction( ( c, b ) -> action.accept( c ) );
+    }
+
+    /**
+     * Apply a mapping function on the FTPClient (possibly performing some action on it) and if it returns an IOAction add that to the actions to be
+     * invoked after the client has been closed.
+     *
+     * @param action
+     *
+     * @return
+     */
+    public FTPClientBuilder invokeLater( IOFunction<FTPClient, IOAction> action )
+    {
+        return addAction( ( c, b ) -> b.add( action.apply( c ) ) );
+    }
 
     public FTPClientBuilder setLogger( Consumer<String> consumer )
     {
@@ -183,9 +229,91 @@ public class FTPClientBuilder
         return this;
     }
 
+    public FTPClientBuilder connect( String s )
+    {
+        connect = c -> c.getDelegate().connect( s );
+        return this;
+    }
+
+    public FTPClientBuilder connect( String s, int p )
+    {
+        connect = c -> c.getDelegate().connect( s, p );
+        return this;
+    }
+
+    public FTPClientBuilder login( String user, String password )
+    {
+        login = c -> c.getDelegate().login( user, password );
+        return this;
+    }
+
+    public FTPClientBuilder login( String user, String password, String account )
+    {
+        login = c -> c.getDelegate().login( user, password, account );
+        return this;
+    }
+
+    public FTPClientBuilder setAttribute( String n, Object v )
+    {
+        attributes.put( n, v );
+        return this;
+    }
+
+    /**
+     * Build an FTPClient instance
+     *
+     * @return
+     */
     public FTPClient build()
     {
         return new DefaultFTPClient( this );
     }
 
+    /**
+     * Builds a lazy FTPClient instance. This client will only connect if an action is required upon it.
+     *
+     * @return
+     */
+    public FTPClient buildLazyClient()
+    {
+        FTPClientBuilder b = this;
+        return new LazyFTPClient( () -> b.build() );
+    }
+
+    public IOConsumer<IOAction.Builder> buildIOActionChain()
+            throws IOException
+    {
+        Objects.requireNonNull( action, "No action chain defined" );
+        return b -> {
+            try( FTPClient client = buildLazyClient() ) {
+                action.accept( client, b );
+            }
+        };
+    }
+
+    /**
+     * Builds an IOAction which will execute any actions applied to this builder and return an IOAction of any actions to run once the client has closed.
+     *
+     * @return
+     *
+     * @throws IOException
+     */
+    public IOSupplier<IOAction> buildIOSupplier()
+            throws IOException
+    {
+        Objects.requireNonNull( action, "No action chain defined" );
+        return () -> {
+            try( FTPClient client = buildLazyClient() ) {
+                IOAction.Builder b = IOAction.builder();
+                action.accept( client, b );
+                return b.build();
+            }
+        };
+    }
+
+    public void execute()
+            throws IOException
+    {
+        buildIOSupplier().get().invoke();
+    }
 }

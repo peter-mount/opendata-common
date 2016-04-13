@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 peter.
+ * Copyright 2015 peter.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.trainwatch.kernel;
+package uk.trainwatch.io;
 
-import java.util.List;
+import java.io.IOException;
 
 /**
- * Command line arguments sent when the kernel starts up.
- * <p>
- * Objects that need to ensure they are started when the kernel does must Observe this object even if they don't do anything with it. It ensures CDI starts that
- * object up.
  *
  * @author peter
+ * @param <U>
+ * @param <T>
  */
 @FunctionalInterface
-public interface CommandArguments
+public interface IOPredicate<T>
 {
 
-    /**
-     * Immutable list of command line arguments
-     *
-     * @return
-     */
-    List<String> getArguments();
+    boolean test( T v )
+            throws IOException;
+
 }

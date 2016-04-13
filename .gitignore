@@ -7,3 +7,4 @@
 /brokers/apachemq/target/
 /brokers/rabbitmq/target/
 /scheduler/target/
+/ftp/target/

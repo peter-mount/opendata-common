@@ -5,6 +5,7 @@
  */
 package uk.trainwatch.util.config;
 
+import java.net.URI;
 import uk.trainwatch.util.config.impl.MapConfiguration;
 import uk.trainwatch.util.config.impl.EmptyConfiguration;
 import java.util.Collection;
@@ -40,6 +41,17 @@ public interface Configuration
         return Stream.empty();
     }
 
+    default URI getURI( String key )
+    {
+        return getURI( key, () -> null );
+    }
+
+    default URI getURI( String key, Supplier<URI> defaultValue )
+    {
+        String s = getString( key );
+        return s == null ? defaultValue.get() : URI.create( s );
+    }
+
     default <E extends Enum<E>> E getEnum( String key, Class<E> clazz )
     {
         return getEnum( key, clazz, null );
@@ -48,15 +60,13 @@ public interface Configuration
     default <E extends Enum<E>> E getEnum( String key, Class<E> clazz, E defaultValue )
     {
         String s = getString( key );
-        if( s == null || s.isEmpty() )
-        {
+        if( s == null || s.isEmpty() ) {
             return defaultValue;
         }
-        try
-        {
+        try {
             return Enum.valueOf( clazz, getString( key ) );
-        } catch( IllegalArgumentException iae )
-        {
+        }
+        catch( IllegalArgumentException iae ) {
             return defaultValue;
         }
     }
@@ -85,16 +95,13 @@ public interface Configuration
     default Configuration getConfiguration( String key, Supplier<Configuration> defaultValue )
     {
         Object o = get( key );
-        if( o instanceof Configuration )
-        {
+        if( o instanceof Configuration ) {
             return (Configuration) o;
         }
-        if( o instanceof JsonObject )
-        {
+        if( o instanceof JsonObject ) {
             return new MapConfiguration( MapBuilder.fromJsonObject( (JsonObject) o ).build() );
         }
-        if( o instanceof Map )
-        {
+        if( o instanceof Map ) {
             return new MapConfiguration( ((Map<String, Object>) o) );
         }
         return defaultValue.get();

@@ -26,8 +26,8 @@ import java.io.Writer;
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -35,6 +35,8 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.net.ftp.FTPHTTPClient;
 import org.apache.commons.net.ftp.FTPReply;
+import uk.trainwatch.io.IOConsumer;
+import uk.trainwatch.io.IOPredicate;
 import uk.trainwatch.util.WriterConsumer;
 
 /**
@@ -45,19 +47,21 @@ public class DefaultFTPClient
         implements uk.trainwatch.io.ftp.FTPClient
 {
 
-    private static final Logger LOG = Logger.getLogger( DefaultFTPClient.class.getName() );
-
+    private final IOConsumer<DefaultFTPClient> connect;
+    private final IOPredicate<DefaultFTPClient> login;
     private final FTPClient ftp;
     private final boolean useEpsvWithIPv4;
     private final boolean localActive;
     private final boolean binaryTransfer;
     private final boolean debuggingEnabled;
-
+    private final Map<String, Object> attributes;
     private boolean loggedIn;
     private WriterConsumer writer;
 
     DefaultFTPClient( FTPClientBuilder builder )
     {
+        this.attributes = builder.attributes;
+
         this.useEpsvWithIPv4 = builder.useEpsvWithIPv4;
         this.localActive = builder.localActive;
         this.binaryTransfer = builder.binaryTransfer;
@@ -67,13 +71,11 @@ public class DefaultFTPClient
         if( builder.proxy == null ) {
             ftp = new FTPClient();
         }
+        else if( builder.proxyUser == null ) {
+            ftp = new FTPHTTPClient( builder.proxy, builder.proxyPort );
+        }
         else {
-            if( builder.proxyUser == null ) {
-                ftp = new FTPHTTPClient( builder.proxy, builder.proxyPort );
-            }
-            else {
-                ftp = new FTPHTTPClient( builder.proxy, builder.proxyPort, builder.proxyUser, builder.proxyPass );
-            }
+            ftp = new FTPHTTPClient( builder.proxy, builder.proxyPort, builder.proxyUser, builder.proxyPass );
         }
 
         if( builder.keepAliveTimeout >= 0 ) {
@@ -95,6 +97,14 @@ public class DefaultFTPClient
                 ftp.addProtocolCommandListener( new PrintCommandListener( new PrintWriter( writer ), true ) );
             }
         }
+
+        connect = builder.connect;
+        login = builder.login;
+    }
+
+    public FTPClient getDelegate()
+    {
+        return ftp;
     }
 
     @Override
@@ -147,28 +157,24 @@ public class DefaultFTPClient
     }
 
     @Override
-    public void connect( String server, int port )
+    public void connect()
             throws IOException
     {
         if( ftp.isConnected() ) {
-            throw new IllegalStateException( "Already connected" );
+            return;
         }
 
-        debug( () -> "Connecting to " + server + " on " + (port > 0 ? port : ftp.getDefaultPort()) );
+        debug( () -> "Connecting..." );
 
-        if( port > 0 ) {
-            ftp.connect( server, port );
-        }
-        else {
-            ftp.connect( server );
-        }
-
-        debug( () -> "Connected to " + server + " on " + (port > 0 ? port : ftp.getDefaultPort()) );
+        connect.accept( this );
 
         // After connection attempt, you should check the reply code to verifysuccess.
-        if( !FTPReply.isPositiveCompletion( ftp.getReplyCode() ) ) {
-            debug( () -> "Connection refused to " + server + " on " + (port > 0 ? port : ftp.getDefaultPort()) );
-            throw new ConnectException( "Failed to connect to " + server );
+        if( FTPReply.isPositiveCompletion( ftp.getReplyCode() ) ) {
+            debug( () -> "Connected" );
+        }
+        else {
+            debug( () -> "Connection refused" );
+            throw new ConnectException( "Connection refused" );
         }
     }
 
@@ -179,14 +185,14 @@ public class DefaultFTPClient
     }
 
     @Override
-    public void login( String username, String password )
+    public void login()
             throws IOException
     {
         if( loggedIn ) {
-            throw new IllegalStateException( "Already logged in" );
+            return;
         }
 
-        if( !ftp.login( username, password ) ) {
+        if( !login.test( this ) ) {
             throw new ConnectException( "Login failed" );
         }
 
@@ -401,6 +407,27 @@ public class DefaultFTPClient
             throws IOException
     {
         return Arrays.asList( ftp.listNames() );
+    }
+
+    @Override
+    public <T> T getAttribute( String n )
+            throws IOException
+    {
+        return (T) attributes.get( n );
+    }
+
+    @Override
+    public void setAttribute( String n, Object v )
+            throws IOException
+    {
+        attributes.put( n, v );
+    }
+
+    @Override
+    public boolean isAttributePresent( String n )
+            throws IOException
+    {
+        return attributes.containsKey( n );
     }
 
 }
