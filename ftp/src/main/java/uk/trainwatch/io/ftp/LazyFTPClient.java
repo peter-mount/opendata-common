@@ -29,21 +29,26 @@ class LazyFTPClient
         implements FTPClient
 {
 
-    private FTPClient client;
+    private final FTPClient client;
 
-    private final Supplier<FTPClient> factory;
-
-    public LazyFTPClient( Supplier<FTPClient> factory )
+    public LazyFTPClient( FTPClient client )
     {
-        this.factory = factory;
+        this.client = client;
     }
 
-    private synchronized FTPClient getClient()
+    private FTPClient getRawClient()
             throws IOException
     {
-        if( client == null ) {
-            client = factory.get();
+        return client;
+    }
+
+    private FTPClient getClient()
+            throws IOException
+    {
+        if( !client.isConnected() ) {
             client.connect();
+        }
+        if( !client.isLoggedIn() ) {
             client.login();
         }
         return client;
@@ -53,51 +58,49 @@ class LazyFTPClient
     public void close()
             throws IOException
     {
-        if( client != null ) {
-            client.close();
-        }
+        client.close();
     }
 
     @Override
     public void connect()
             throws IOException
     {
-        getClient().connect();
+        getRawClient().connect();
     }
 
     @Override
-    public synchronized boolean isConnected()
+    public boolean isConnected()
             throws IOException
     {
-        return client != null && client.isConnected();
+        return getRawClient().isConnected();
     }
 
     @Override
     public void login()
             throws IOException
     {
-        getClient().login();
+        getRawClient().login();
     }
 
     @Override
     public void log( Supplier<String> msg )
             throws IOException
     {
-        getClient().log( msg );
+        getRawClient().log( msg );
     }
 
     @Override
     public void log( String msg )
             throws IOException
     {
-        getClient().log( msg );
+        getRawClient().log( msg );
     }
 
     @Override
-    public synchronized boolean isLoggedIn()
+    public boolean isLoggedIn()
             throws IOException
     {
-        return client != null && client.isLoggedIn();
+        return getRawClient().isLoggedIn();
     }
 
     @Override
@@ -559,21 +562,21 @@ class LazyFTPClient
     public <T> T getAttribute( String n )
             throws IOException
     {
-        return getClient().<T>getAttribute( n );
+        return getRawClient().<T>getAttribute( n );
     }
 
     @Override
     public void setAttribute( String n, Object v )
             throws IOException
     {
-        getClient().setAttribute( n, v );
+        getRawClient().setAttribute( n, v );
     }
 
     @Override
-    public synchronized boolean isAttributePresent( String n )
+    public boolean isAttributePresent( String n )
             throws IOException
     {
-        return client != null && client.isAttributePresent( n );
+        return getRawClient().isAttributePresent( n );
     }
 
 }

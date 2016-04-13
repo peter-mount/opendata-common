@@ -276,17 +276,20 @@ public class FTPClientBuilder
      */
     public FTPClient buildLazyClient()
     {
-        FTPClientBuilder b = this;
-        return new LazyFTPClient( () -> b.build() );
+        return new LazyFTPClient( build() );
     }
 
     public IOConsumer<IOAction.Builder> buildIOActionChain()
             throws IOException
     {
         Objects.requireNonNull( action, "No action chain defined" );
+        FTPClient client = buildLazyClient();
         return b -> {
-            try( FTPClient client = buildLazyClient() ) {
+            try {
                 action.accept( client, b );
+            }
+            finally {
+                client.close();
             }
         };
     }
@@ -301,14 +304,8 @@ public class FTPClientBuilder
     public IOSupplier<IOAction> buildIOSupplier()
             throws IOException
     {
-        Objects.requireNonNull( action, "No action chain defined" );
-        return () -> {
-            try( FTPClient client = buildLazyClient() ) {
-                IOAction.Builder b = IOAction.builder();
-                action.accept( client, b );
-                return b.build();
-            }
-        };
+        IOConsumer<IOAction.Builder> c = buildIOActionChain();
+        return () -> IOAction.builder().invoke( c ).build();
     }
 
     public void execute()
