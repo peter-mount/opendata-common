@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -534,6 +535,26 @@ public interface FTPClient
             throws IOException
     {
         return listFiles().stream();
+    }
+
+    /**
+     * A comparator that sorts an {@link FTPFile} by it's name
+     *
+     * @return
+     */
+    static Comparator<FTPFile> sortFTPFile()
+    {
+        return ( a, b ) -> a.getName().compareTo( b.getName() );
+    }
+
+    /**
+     * A comparator that sorts an {@link FTPFile} by it's name in reverse order. This is useful when you want the last file in some list
+     *
+     * @return
+     */
+    static Comparator<FTPFile> sortFTPFileReversed()
+    {
+        return ( a, b ) -> b.getName().compareTo( a.getName() );
     }
 
     /**

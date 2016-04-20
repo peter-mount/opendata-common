@@ -44,7 +44,7 @@ public class Functions
     }
 
     /**
-     * BinaryOperator that will preserve an existing entry when used as a combiner
+     * BinaryOperator that will preserve an existing entry when used as a combiner or the first entry in a reduction.
      * <p>
      * @param <T> Type
      * <p>
@@ -56,7 +56,7 @@ public class Functions
     }
 
     /**
-     * BinaryOperator that will overwrite an existing entry when used as a combiner
+     * BinaryOperator that will overwrite an existing entry when used as a combiner or the last entry in a reduction.
      * <p>
      * @param <T> Type
      * <p>
