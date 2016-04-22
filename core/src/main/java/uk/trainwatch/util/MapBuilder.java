@@ -19,11 +19,16 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,15 +36,24 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 
 /**
- * A builder of maps
+ * A builder of maps, reducing the amount of code required to build maps but also provides additional methods useful in building maps from alternate sources.
+ * <p>
+ * Not just maps are supported, you can use this to build {@link JsonObject}'s, {@link JsonObjectBuilder}, return the map as a {@link Stream} of
+ * {@link Map.Entry} so you can generate other constructs from the map data.
+ * <p>
+ * One common use of stream is to form a URI/URL QueryString, which is implemented by the {@link #toQueryString() } method.
  *
  * @author peter
  * @param <K>
@@ -51,17 +65,37 @@ public interface MapBuilder<K, V>
 {
 
     /**
-     * Add a new entry, replacing any existing one
+     * Add a new entry, replacing any existing one.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
      *
      * @param k key
      * @param v value
      *
      * @return
+     *
+     * @throws NullPointerException if key is null.
      */
     MapBuilder<K, V> add( K k, V v );
 
     /**
+     * Add a new entry, replacing any existing one.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
+     *
+     * @param k mapping function to extract the key from the value
+     * @param v value
+     *
+     * @return
+     *
+     * @throws NullPointerException if key is null.
+     */
+    MapBuilder<K, V> add( Function<V, K> k, V v );
+
+    /**
      * Add all values.
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed or ignore a value in the array if it is null.
      *
      * @param k      function to extract the key
      * @param values values to add
@@ -72,6 +106,8 @@ public interface MapBuilder<K, V>
 
     /**
      * Add all values. This method will not replace any existing key
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed or ignore a value in the collection if it is null.
      *
      * @param k      function to extract the key
      * @param values values to add
@@ -81,16 +117,62 @@ public interface MapBuilder<K, V>
     MapBuilder<K, V> addAll( Function<V, K> k, Collection<V> values );
 
     /**
-     * Add all entries from an existing map
+     * Add all values. This method will not replace any existing key
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed or ignore a value in the collection if it is null.
      *
-     * @param map Map to add
+     * @param k      function to extract the key
+     * @param values values to add
+     * @param p      Predicate to filter the value
+     *
+     * @return
+     */
+    MapBuilder<K, V> addAll( Function<V, K> k, Collection<V> values, Predicate<V> p );
+
+    /**
+     * Add all entries from an existing map.
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed.
+     *
+     * @param map Map to add.
      *
      * @return
      */
     MapBuilder<K, V> addAll( Map<K, V> map );
 
     /**
+     * Add all entries from an existing map filtering the entries with a {@link Predicate}.
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed.
+     *
+     * @param map Map to add.
+     * @param p   Predicate to filter the contents against
+     *
+     * @return
+     */
+    MapBuilder<K, V> addAll( Map<K, V> map, Predicate<Map.Entry<K, V>> p );
+
+    /**
+     * Add a value from a {@link Map.Entry}.
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed or ignore a value if it is null.
+     *
+     * @param e
+     *
+     * @return
+     */
+    default MapBuilder<K, V> add( Map.Entry<K, V> e )
+    {
+        if( e != null ) {
+            add( e.getKey(), e.getValue() );
+        }
+        return this;
+    }
+
+    /**
      * Adds a value to this builder.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
      *
      * @param v Value to add
      *
@@ -102,6 +184,8 @@ public interface MapBuilder<K, V>
 
     /**
      * Add all values.
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed or ignore a value if it is null.
      *
      * @param values values to add
      *
@@ -111,6 +195,8 @@ public interface MapBuilder<K, V>
 
     /**
      * Add all values. This method will not replace any existing key
+     * <p>
+     * It is safe to pass null to the method. Implementations must do nothing if null is passed.
      *
      * @param values values to add
      *
@@ -175,26 +261,112 @@ public interface MapBuilder<K, V>
      */
     Map<K, V> build();
 
+    /**
+     * Returns a stream of {@link Map.Entry} objects of the built map
+     *
+     * @return
+     */
+    default Stream<Map.Entry<K, V>> stream()
+    {
+        return build().entrySet().stream();
+    }
+
+    /**
+     * Add a supplier to the map. This is a convenience method to allow lambdas to be added to a map.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
+     * <p>
+     * Note the Value of this map must be compatible with the value passed.
+     *
+     * @param <A>
+     * @param key
+     * @param f
+     *
+     * @return
+     *
+     * @throws ClassCastException if V is not compatible with the supplier
+     */
     default <A> MapBuilder<K, V> addSupplier( K key, Supplier<A> f )
     {
         return add( key, (V) f );
     }
 
+    /**
+     * Add a consumer to the map. This is a convenience method to allow lambdas to be added to a map.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
+     * <p>
+     * Note the Value of this map must be compatible with the value passed.
+     *
+     * @param <A>
+     * @param key
+     * @param f
+     *
+     * @return
+     *
+     * @throws ClassCastException if V is not compatible with the supplier
+     */
     default <A> MapBuilder<K, V> addConsumer( K key, Consumer<A> f )
     {
         return add( key, (V) f );
     }
 
+    /**
+     * Add a function to the map. This is a convenience method to allow lambdas to be added to a map.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
+     * <p>
+     * Note the Value of this map must be compatible with the value passed.
+     *
+     * @param <A>
+     * @param key
+     * @param f
+     *
+     * @return
+     *
+     * @throws ClassCastException if V is not compatible with the supplier
+     */
     default <A, B> MapBuilder<K, V> addFunction( K key, Function<A, B> f )
     {
         return add( key, (V) f );
     }
 
+    /**
+     * Add a BiFunction to the map. This is a convenience method to allow lambdas to be added to a map.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
+     * <p>
+     * Note the Value of this map must be compatible with the value passed.
+     *
+     * @param <A>
+     * @param key
+     * @param f
+     *
+     * @return
+     *
+     * @throws ClassCastException if V is not compatible with the supplier
+     */
     default <A, B, C> MapBuilder<K, V> addBiFunction( K key, BiFunction<A, B, C> f )
     {
         return add( key, (V) f );
     }
 
+    /**
+     *
+     * Add a BiConsumer to the map. This is a convenience method to allow lambdas to be added to a map.
+     * <p>
+     * It is safe to pass a null value to the method. Implementations must do nothing if null is passed.
+     * <p>
+     * Note the Value of this map must be compatible with the value passed.
+     *
+     * @param <A>
+     * @param key
+     * @param f
+     *
+     * @return
+     *
+     * @throws ClassCastException if V is not compatible with the supplier
+     */
     default <A, B> MapBuilder<K, V> addBiConsumer( K key, BiConsumer<A, B> f )
     {
         return add( key, (V) f );
@@ -235,6 +407,25 @@ public interface MapBuilder<K, V>
     }
 
     /**
+     * Add all properties from a Path
+     *
+     * @param p           Path
+     * @param keyMapper   function to convert key
+     * @param valueMapper function to convert value
+     *
+     * @return
+     *
+     * @throws IOException
+     */
+    default MapBuilder<K, V> addProperties( Path p, Function<Object, K> keyMapper, Function<Object, V> valueMapper )
+            throws IOException
+    {
+        try( Reader r = Files.newBufferedReader( p ) ) {
+            return addProperties( r, keyMapper, valueMapper );
+        }
+    }
+
+    /**
      * Add properties from a Reader
      *
      * @param r           Reader
@@ -251,6 +442,30 @@ public interface MapBuilder<K, V>
         Properties p = new Properties();
         p.load( r );
         return addProperties( p, keyMapper, valueMapper );
+    }
+
+    /**
+     * Return this map as an encoded Query String.
+     *
+     * @return
+     *
+     * @throws IllegalStateException if encoding fails
+     */
+    default String toQueryString()
+    {
+        return stream()
+                .filter( e -> e.getKey() != null )
+                .map( e -> {
+                    try {
+                        return URLEncoder.encode( Objects.toString( e.getKey() ), "UTF-8" )
+                               + "="
+                               + URLEncoder.encode( Objects.toString( e.getValue(), "" ), "UTF-8" );
+                    }
+                    catch( UnsupportedEncodingException ex ) {
+                        throw new IllegalStateException( ex );
+                    }
+                } )
+                .collect( Collectors.joining( "&" ) );
     }
 
     /**
@@ -416,11 +631,22 @@ public interface MapBuilder<K, V>
             }
 
             @Override
+            public MapBuilder<K, V> add( Function<V, K> k, V v )
+            {
+                if( v != null ) {
+                    getMap().putIfAbsent( k.apply( v ), v );
+                }
+                return this;
+            }
+
+            @Override
             public MapBuilder<K, V> addAll( Function<V, K> k, V... values )
             {
-                Map<K, V> m = getMap();
-                for( V v: values ) {
-                    m.putIfAbsent( k.apply( v ), v );
+                if( values != null && values.length > 0 ) {
+                    Map<K, V> m = getMap();
+                    for( V v: values ) {
+                        m.putIfAbsent( k.apply( v ), v );
+                    }
                 }
                 return this;
             }
@@ -428,17 +654,48 @@ public interface MapBuilder<K, V>
             @Override
             public MapBuilder<K, V> addAll( Function<V, K> k, Collection<V> values )
             {
-                Map<K, V> m = getMap();
-                values.stream().
-                        forEach( v -> m.putIfAbsent( k.apply( v ), v ) );
+                if( values != null && !values.isEmpty() ) {
+                    Map<K, V> m = getMap();
+                    values.stream()
+                            .forEach( v -> m.putIfAbsent( k.apply( v ), v ) );
+                }
+                return this;
+            }
+
+            @Override
+            public MapBuilder<K, V> addAll( Function<V, K> k, Collection<V> values, Predicate<V> p )
+            {
+                if( values != null && !values.isEmpty() ) {
+                    Map<K, V> m = getMap();
+                    values.stream()
+                            .filter( p )
+                            .forEach( v -> m.putIfAbsent( k.apply( v ), v ) );
+                }
                 return this;
             }
 
             @Override
             public MapBuilder<K, V> addAll( Map<K, V> map )
             {
-                Map<K, V> m = getMap();
-                map.entrySet().stream().forEach( e -> m.put( e.getKey(), e.getValue() ) );
+                if( map != null && !map.isEmpty() ) {
+                    Map<K, V> m = getMap();
+                    map.entrySet()
+                            .stream()
+                            .forEach( e -> m.put( e.getKey(), e.getValue() ) );
+                }
+                return this;
+            }
+
+            @Override
+            public MapBuilder<K, V> addAll( Map<K, V> map, Predicate<Map.Entry<K, V>> p )
+            {
+                if( map != null && !map.isEmpty() ) {
+                    Map<K, V> m = getMap();
+                    map.entrySet()
+                            .stream()
+                            .filter( p )
+                            .forEach( e -> m.put( e.getKey(), e.getValue() ) );
+                }
                 return this;
             }
 

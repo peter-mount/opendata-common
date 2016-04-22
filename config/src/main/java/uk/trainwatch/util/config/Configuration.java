@@ -10,6 +10,7 @@ import uk.trainwatch.util.config.impl.MapConfiguration;
 import uk.trainwatch.util.config.impl.EmptyConfiguration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,20 +55,25 @@ public interface Configuration
 
     default <E extends Enum<E>> E getEnum( String key, Class<E> clazz )
     {
-        return getEnum( key, clazz, null );
+        return getEnumOrDefault( key, clazz, () -> null );
     }
 
     default <E extends Enum<E>> E getEnum( String key, Class<E> clazz, E defaultValue )
     {
+        return getEnumOrDefault( key, clazz, () -> defaultValue );
+    }
+
+    default <E extends Enum<E>> E getEnumOrDefault( String key, Class<E> clazz, Supplier<E> defaultValue )
+    {
         String s = getString( key );
         if( s == null || s.isEmpty() ) {
-            return defaultValue;
+            return defaultValue.get();
         }
         try {
             return Enum.valueOf( clazz, getString( key ) );
         }
         catch( IllegalArgumentException iae ) {
-            return defaultValue;
+            return defaultValue.get();
         }
     }
 
@@ -109,13 +115,18 @@ public interface Configuration
 
     default boolean getBoolean( String key )
     {
-        return getBoolean( key, false );
+        return getBoolean( key, () -> false );
     }
 
     default boolean getBoolean( String key, boolean defaultValue )
     {
+        return getBoolean( key, () -> defaultValue );
+    }
+
+    default boolean getBoolean( String key, Supplier<Boolean> defaultValue )
+    {
         String s = getString( key );
-        return s == null ? defaultValue : Boolean.valueOf( getString( key ) );
+        return s == null ? defaultValue.get() : Boolean.valueOf( getString( key ) );
     }
 
     default int getInt( String key )
@@ -125,8 +136,13 @@ public interface Configuration
 
     default int getInt( String key, int defaultValue )
     {
+        return getInt( key, () -> defaultValue );
+    }
+
+    default int getInt( String key, Supplier<Integer> defaultValue )
+    {
         String s = getString( key );
-        return s == null || s.isEmpty() ? defaultValue : Integer.parseInt( s );
+        return s == null || s.isEmpty() ? defaultValue.get() : Integer.parseInt( s );
     }
 
     default long getLong( String key )
@@ -136,8 +152,13 @@ public interface Configuration
 
     default long getLong( String key, long defaultValue )
     {
+        return getLong( key, () -> defaultValue );
+    }
+
+    default long getLong( String key, Supplier<Long> defaultValue )
+    {
         String s = getString( key );
-        return s == null || s.isEmpty() ? defaultValue : Long.parseLong( s );
+        return s == null || s.isEmpty() ? defaultValue.get() : Long.parseLong( s );
     }
 
     default double getDouble( String key )
@@ -147,8 +168,46 @@ public interface Configuration
 
     default double getDouble( String key, double defaultValue )
     {
-        String s = getString( key );
-        return s == null || s.isEmpty() ? defaultValue : Double.parseDouble( s );
+        return getDouble( key, () -> defaultValue );
     }
 
+    default double getDouble( String key, Supplier<Double> defaultValue )
+    {
+        String s = getString( key );
+        return s == null || s.isEmpty() ? defaultValue.get() : Double.parseDouble( s );
+    }
+
+    /**
+     * Get a value passing it to a mapping function if not null
+     *
+     * @param <T>
+     * @param key
+     * @param f
+     *
+     * @return
+     */
+    default <T> T get( String key, Function<String, T> f )
+    {
+        return get( key, f, () -> null );
+    }
+
+    /**
+     * Get a value passing it to a mapping function if not null and then if the final result is null then return the output of the supplier.
+     *
+     * @param <T>
+     * @param key
+     * @param f
+     * @param defaultValue
+     *
+     * @return
+     */
+    default <T> T get( String key, Function<String, T> f, Supplier<T> defaultValue )
+    {
+        T v = null;
+        String s = getString( key );
+        if( s != null ) {
+            v = f.apply( s );
+        }
+        return v == null ? defaultValue.get() : v;
+    }
 }

@@ -15,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
 import javax.json.JsonReader;
-import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -70,20 +70,21 @@ public class HttpConfiguration
                         HttpGet get = new HttpGet( uri );
                         get.setHeader( "User-Agent", "Area51 Configuration/1.0" );
 
-                        HttpResponse response = client.execute( get );
-                        switch( response.getStatusLine().getStatusCode() ) {
-                            case 200:
-                            case 304:
-                                try( InputStream is = response.getEntity().getContent() ) {
-                                    try( JsonReader r = Json.createReader( new InputStreamReader( is ) ) ) {
-                                        configuration = new MapConfiguration( MapBuilder.fromJsonObject( r.readObject() ).build() );
-                                        return;
+                        try( CloseableHttpResponse response = client.execute( get ) ) {
+                            switch( response.getStatusLine().getStatusCode() ) {
+                                case 200:
+                                case 304:
+                                    try( InputStream is = response.getEntity().getContent() ) {
+                                        try( JsonReader r = Json.createReader( new InputStreamReader( is ) ) ) {
+                                            configuration = new MapConfiguration( MapBuilder.fromJsonObject( r.readObject() ).build() );
+                                            return;
+                                        }
                                     }
-                                }
 
-                            default:
-                                LOG.log( Level.WARNING, () -> "Error " + uri.getScheme() + "://" + uri.getHost() + uri.getPath()
-                                                              + " " + response.getStatusLine().getStatusCode() );
+                                default:
+                                    LOG.log( Level.WARNING, () -> "Error " + uri.getScheme() + "://" + uri.getHost() + uri.getPath()
+                                                                  + " " + response.getStatusLine().getStatusCode() );
+                            }
                         }
                     }
                     catch( ConnectException ex ) {
