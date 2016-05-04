@@ -467,7 +467,7 @@ public interface MapBuilder<K, V>
                 } )
                 .collect( Collectors.joining( "&" ) );
     }
-
+    
     /**
      * Create a builder of an non-concurrent map.
      *

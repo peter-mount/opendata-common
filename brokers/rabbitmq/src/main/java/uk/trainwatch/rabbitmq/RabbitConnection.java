@@ -53,11 +53,11 @@ public class RabbitConnection
 
     RabbitConnection()
     {
-        this.username = null;
-        this.password = null;
-        this.virtualHost = null;
-        this.host = null;
-        this.portNumber = 0;
+        this( System.getenv( "RABBIT_USER" ),
+              System.getenv( "RABBIT_PASSWORD" ),
+              System.getenv( "RABBIT_HOST" ),
+              Integer.parseInt( Objects.toString( System.getenv( "RABBIT_PORT" ), "0" ) ),
+              Objects.toString( System.getenv( "RABBIT_VHOST" ), null ) );
     }
 
     public RabbitConnection( Configuration config )
@@ -131,8 +131,7 @@ public class RabbitConnection
     public synchronized Connection getConnection()
             throws IOException
     {
-        if( connection == null )
-        {
+        if( connection == null ) {
             createConnection();
         }
         return connection;
@@ -141,8 +140,7 @@ public class RabbitConnection
     private void createConnection()
             throws IOException
     {
-        if( connection != null )
-        {
+        if( connection != null ) {
             close();
         }
 
@@ -150,13 +148,11 @@ public class RabbitConnection
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUsername( username );
         factory.setPassword( password );
-        if( virtualHost != null )
-        {
+        if( virtualHost != null ) {
             factory.setVirtualHost( virtualHost );
         }
         factory.setHost( host );
-        if( portNumber > 0 )
-        {
+        if( portNumber > 0 ) {
             factory.setPort( portNumber );
         }
 
@@ -179,45 +175,40 @@ public class RabbitConnection
     public synchronized Channel getChannel( Object key )
     {
         Channel channel = null;
-        do
-        {
+        do {
             channel = channels.computeIfAbsent( key, k
-                                                -> 
-                                                {
-                                                    try
-                                                    {
-                                                        LOG.log( Level.FINE, "creating channel" );
-                                                        return getConnection().
-                                                                createChannel();
-                                                    } catch( IOException ex )
-                                                    {
-                                                        throw new UncheckedIOException( ex );
-                                                    }
+                                                -> {
+                                            try {
+                                                LOG.log( Level.FINE, "creating channel" );
+                                                return getConnection().
+                                                        createChannel();
+                                            }
+                                            catch( IOException ex ) {
+                                                throw new UncheckedIOException( ex );
+                                            }
                                         } );
-            if( channel != null && !channel.isOpen() )
-            {
+            if( channel != null && !channel.isOpen() ) {
                 LOG.log( Level.FINE, "discarding dead channel" );
 
                 channels.remove( key );
                 channel = null;
             }
-        } while( channel == null );
+        }
+        while( channel == null );
 
         return channel;
     }
 
     public void close( Object key, Channel channel )
     {
-        if( channels.remove( key, channel ) )
-        {
-            try
-            {
+        if( channels.remove( key, channel ) ) {
+            try {
                 channel.close();
-            } catch( ShutdownSignalException ex )
-            {
+            }
+            catch( ShutdownSignalException ex ) {
                 // Ignore
-            } catch( IOException ex )
-            {
+            }
+            catch( IOException ex ) {
                 Logger.getLogger( RabbitConnection.class.getName() ).
                         log( Level.SEVERE, null, ex );
             }
@@ -230,35 +221,28 @@ public class RabbitConnection
     public synchronized void close()
     {
         LOG.log( Level.FINE, "closing connection" );
-        try
-        {
-            try
-            {
+        try {
+            try {
                 channels.forEach( ( n, c )
-                        -> 
-                        {
-                            try
-                            {
-                                c.close();
-                            } catch( Throwable t )
-                            {
-                                // Ignore as we are cleaning up
-                            }
+                        -> {
+                    try {
+                        c.close();
+                    }
+                    catch( Throwable t ) {
+                        // Ignore as we are cleaning up
+                    }
                 } );
             }
-            finally
-            {
-                if( connection != null )
-                {
+            finally {
+                if( connection != null ) {
                     connection.close();
                 }
             }
-        } catch( Throwable t )
-        {
+        }
+        catch( Throwable t ) {
             // Ignore as we are cleaning up
         }
-        finally
-        {
+        finally {
             channels.clear();
             connection = null;
         }

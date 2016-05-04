@@ -20,11 +20,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
-import javax.inject.Inject;
 import javax.json.JsonStructure;
 import uk.trainwatch.util.Consumers;
-import uk.trainwatch.util.config.Configuration;
-import uk.trainwatch.util.config.impl.GlobalConfiguration;
 
 /**
  *
@@ -36,33 +33,27 @@ public class Rabbit
 
     private volatile RabbitConnection connection;
 
-    @Inject
-    @GlobalConfiguration( "rabbit" )
-    private Configuration configuration;
-
+    @Deprecated
     public boolean isDev()
     {
-        return configuration.getBoolean( "dev", false );
+        return false;
     }
 
     public synchronized RabbitConnection getConnection()
     {
-        if( connection == null )
-        {
-            connection = new RabbitConnection( configuration );
+        if( connection == null ) {
+            connection = new RabbitConnection();
         }
         return connection;
     }
 
     void close()
     {
-        if( connection != null )
-        {
-            try
-            {
+        if( connection != null ) {
+            try {
                 connection.close();
-            } catch( IllegalStateException ex )
-            {
+            }
+            catch( IllegalStateException ex ) {
             }
         }
     }
