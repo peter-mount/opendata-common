@@ -138,6 +138,15 @@ public final class Consumers
         return t -> c.accept( f.apply( t ) );
     }
 
+    public static <T> Consumer<T> consumeIfNotNull( Consumer<T> c )
+    {
+        return t -> {
+            if( t != null ) {
+                c.accept( t );
+            }
+        };
+    }
+
     public static <T, U> Consumer<T> consumeIfNotNull( Function<T, U> f, Consumer<U> c )
     {
         return t -> {
