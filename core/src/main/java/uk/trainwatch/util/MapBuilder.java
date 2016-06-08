@@ -30,15 +30,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.JsonArray;
@@ -467,7 +470,7 @@ public interface MapBuilder<K, V>
                 } )
                 .collect( Collectors.joining( "&" ) );
     }
-    
+
     /**
      * Create a builder of an non-concurrent map.
      *
@@ -572,6 +575,48 @@ public interface MapBuilder<K, V>
         return b;
     }
 
+    /**
+     * Return a collector that will use the defined keyMapper to collect results into a map.
+     * @return 
+     */
+    default Collector<V, ?, Map<K, V>> collect()
+    {
+        MapBuilder<K, V> t = this;
+        return new Collector<V, MapBuilder<K, V>, Map<K, V>>()
+        {
+            @Override
+            public Set<Collector.Characteristics> characteristics()
+            {
+                return Collections.emptySet();
+            }
+
+            @Override
+            public Supplier<MapBuilder<K, V>> supplier()
+            {
+                return () -> t;
+            }
+
+            @Override
+            public BiConsumer<MapBuilder<K, V>, V> accumulator()
+            {
+                return MapBuilder::add;
+            }
+
+            @Override
+            public BinaryOperator<MapBuilder<K, V>> combiner()
+            {
+                return Functions.writeOnceBinaryOperator();
+            }
+
+            @Override
+            public Function<MapBuilder<K, V>, Map<K, V>> finisher()
+            {
+                return MapBuilder::build;
+            }
+
+        };
+    }
+    
     /**
      * Create a builder with a supplied map
      *

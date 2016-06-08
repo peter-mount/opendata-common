@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import uk.trainwatch.util.sql.SQLConsumer;
 
 /**
@@ -265,13 +266,7 @@ public final class Consumers
             return sink();
         }
 
-        Consumer<T> c = null;
-        for( Consumer<T> consumer: consumers ) {
-            if( consumer != null ) {
-                c = andThen( c, consumer );
-            }
-        }
-        return ensureNotNull( c );
+        return Stream.of( consumers ).reduce( Consumers::andThen ).orElse( sink() );
     }
 
     public static <T> Consumer<T> andThenGuarded( Consumer<T> a, Consumer<T> b )
@@ -320,13 +315,10 @@ public final class Consumers
             return sink();
         }
 
-        Consumer<T> c = null;
-        for( Consumer<T> consumer: consumers ) {
-            if( consumer != null ) {
-                c = andThen( c, guard( log, consumer ) );
-            }
-        }
-        return ensureNotNull( c );
+        return Stream.of( consumers )
+                .map( c -> guard( log, c ) )
+                .reduce( Consumers::andThen )
+                .orElse( sink() );
     }
 
     /**
