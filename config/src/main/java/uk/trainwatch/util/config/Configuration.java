@@ -98,6 +98,7 @@ public interface Configuration
         return getConfiguration( key, () -> defaultValue );
     }
 
+    @SuppressWarnings("unchecked")
     default Configuration getConfiguration( String key, Supplier<Configuration> defaultValue )
     {
         Object o = get( key );

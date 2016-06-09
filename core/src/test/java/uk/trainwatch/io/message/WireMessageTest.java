@@ -38,13 +38,6 @@ public class WireMessageTest
 
     private static final String TEST_STRING = "A test string";
 
-    private static final String TEST_LINES[] = {
-        TEST_STRING,
-        "Line 2",
-        "Line 3",
-        "Line 4"
-    };
-
     private WireMessageBuilder build( String type )
     {
         return new WireMessageBuilder( type )
@@ -100,6 +93,7 @@ public class WireMessageTest
             }
         } );
 
+        @SuppressWarnings("unchecked")
         byte b[] = build( "TestText" )
                 .content( TEST_STRING )
                 .build();
@@ -129,6 +123,7 @@ public class WireMessageTest
         ary[1] = 7;
         ary[4] = 21;
 
+        @SuppressWarnings("unchecked")
         byte b[] = build( "TestByteArray" )
                 .content( () -> ary )
                 .build();

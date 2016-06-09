@@ -662,6 +662,7 @@ public class RabbitMQ
      *
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static Map<String, Object> fixAMQPTable( Map<String, Object> m )
     {
         if( m == null )

@@ -52,6 +52,7 @@ public class StateEngineTest
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void initial()
     {
         Collection<StateEngine.State> initial = engine.getInitialStates();

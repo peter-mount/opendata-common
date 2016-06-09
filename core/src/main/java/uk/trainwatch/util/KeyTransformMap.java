@@ -48,6 +48,7 @@ public class KeyTransformMap<K, V>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean containsKey( Object key )
     {
         return map.containsKey( f.apply( (K) key ) );
@@ -60,6 +61,7 @@ public class KeyTransformMap<K, V>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public V get( Object key )
     {
         return map.get( f.apply( (K) key ) );
@@ -72,6 +74,7 @@ public class KeyTransformMap<K, V>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public V remove( Object key )
     {
         return map.remove( f.apply( (K) key ) );
@@ -85,6 +88,7 @@ public class KeyTransformMap<K, V>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public V getOrDefault( Object key, V defaultValue )
     {
         return map.getOrDefault( f.apply( (K) key ), defaultValue );
@@ -97,6 +101,7 @@ public class KeyTransformMap<K, V>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean remove( Object key, Object value )
     {
         return map.remove( f.apply( (K) key ), value );

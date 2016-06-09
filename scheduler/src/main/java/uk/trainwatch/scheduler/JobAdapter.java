@@ -47,6 +47,7 @@ public class JobAdapter
         Bean<?> bean = CDIUtils.getBean( name );
         LOG.log( Level.INFO, () -> "bean " + bean );
 
+        @SuppressWarnings( "unchecked" )
         Job job = CDIUtils.getInstance( (Bean<Job>) bean, Job.class );
         LOG.log( Level.INFO, () -> "job " + job );
 

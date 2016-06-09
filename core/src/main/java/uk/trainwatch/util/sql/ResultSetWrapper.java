@@ -143,6 +143,7 @@ public final class ResultSetWrapper
     //</editor-fold>
     //<editor-fold defaultstate="collapsed" desc="Wrapper implementation">
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T unwrap( Class<T> iface )
             throws SQLException
     {
@@ -227,6 +228,7 @@ public final class ResultSetWrapper
     }
 
     @Override
+    @Deprecated
     public BigDecimal getBigDecimal( int columnIndex, int scale )
             throws SQLException
     {
@@ -269,6 +271,7 @@ public final class ResultSetWrapper
     }
 
     @Override
+    @Deprecated
     public InputStream getUnicodeStream( int columnIndex )
             throws SQLException
     {
@@ -339,6 +342,7 @@ public final class ResultSetWrapper
     }
 
     @Override
+    @Deprecated
     public BigDecimal getBigDecimal( String columnLabel, int scale )
             throws SQLException
     {
@@ -381,6 +385,7 @@ public final class ResultSetWrapper
     }
 
     @Override
+    @Deprecated
     public InputStream getUnicodeStream( String columnLabel )
             throws SQLException
     {

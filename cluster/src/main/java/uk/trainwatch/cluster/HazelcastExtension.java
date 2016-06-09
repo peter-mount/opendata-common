@@ -45,7 +45,7 @@ public class HazelcastExtension
         implements Extension
 {
 
-    private static final Logger log = Logger.getLogger( HazelcastExtension.class.getName() );
+    private static final Logger LOG = Logger.getLogger( HazelcastExtension.class.getName() );
 
     public static final String HAZELCAST_CONFIG_LOCATION = "hazelcast.config.location";
 
@@ -56,6 +56,7 @@ public class HazelcastExtension
 
     private CachingProvider provider;
 
+    @SuppressWarnings("unchecked")
     public void beforeBeanDiscovery( @Observes BeforeBeanDiscovery type )
     {
         // Scan for all cluster.xml files & merge into a single hazelcast.xml file
@@ -67,7 +68,7 @@ public class HazelcastExtension
 
             System.setProperty( "hazelcast.jcache.provider.type", "server" );
 
-            log.log( Level.INFO, () -> "Generating " + configFile );
+            LOG.log( Level.INFO, () -> "Generating " + configFile );
 
             URL baseURL = new URL( System.getProperty( "uk.trainwatch.cluster", "file:/usr/local/etc/cluster.xml" ) );
 
@@ -79,7 +80,7 @@ public class HazelcastExtension
                 Streams.concat( finder.findAll( "cluster.xml" ),
                                 Collections.singletonList( baseURL ) ).
                         forEach( url -> {
-                            log.log( Level.FINE, () -> "Found " + url );
+                            LOG.log( Level.FINE, () -> "Found " + url );
 
                             try( BufferedReader r = new BufferedReader( new InputStreamReader( url.openStream() ) ) ) {
                                 r.lines().
@@ -97,24 +98,24 @@ public class HazelcastExtension
         }
         catch( IOException |
                UncheckedIOException ex ) {
-            log.log( Level.SEVERE, null, ex );
+            LOG.log( Level.SEVERE, null, ex );
             throw new IllegalArgumentException( ex );
         }
     }
 
     public void afterBeanDiscovery( @Observes AfterBeanDiscovery type )
     {
-        log.log( Level.INFO, "Getting CachingProvider" );
+        LOG.log( Level.INFO, "Getting CachingProvider" );
         provider = Caching.getCachingProvider();
 
         // Obtain the CacheManager - this will force Hazelcast to start up.
         // We'll report the available cache names anyhow
-        log.log( Level.INFO, "Getting CacheManager" );
+        LOG.log( Level.INFO, "Getting CacheManager" );
         provider.getCacheManager().
                 getCacheNames().
-                forEach( cacheName -> log.log( Level.INFO, () -> "Found cache: " + cacheName ) );
+                forEach( cacheName -> LOG.log( Level.INFO, () -> "Found cache: " + cacheName ) );
 
-        log.log( Level.INFO, "Hazelcast & JCache started" );
+        LOG.log( Level.INFO, "Hazelcast & JCache started" );
     }
 
     public void beforeShutdown( @Observes BeforeShutdown type )

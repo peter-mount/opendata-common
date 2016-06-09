@@ -56,6 +56,7 @@ public class MapConfiguration
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Configuration getConfiguration( String key, Supplier<Configuration> defaultValue )
     {
         Object o = config.computeIfPresent( key,
@@ -72,6 +73,7 @@ public class MapConfiguration
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Stream<Object> collection( String key )
     {
         Object o = config.get( key );
