@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import uk.trainwatch.util.config.Configuration;
@@ -159,7 +160,11 @@ public class RabbitConnection
         channels.clear();
 
         LOG.log( Level.FINE, "creating connection" );
-        connection = factory.newConnection();
+        try {
+            connection = factory.newConnection();
+        } catch( TimeoutException ex ) {
+            throw new IOException(ex );
+        }
     }
 
     /**
@@ -205,7 +210,7 @@ public class RabbitConnection
             try {
                 channel.close();
             }
-            catch( ShutdownSignalException ex ) {
+            catch( TimeoutException | ShutdownSignalException ex ) {
                 // Ignore
             }
             catch( IOException ex ) {
