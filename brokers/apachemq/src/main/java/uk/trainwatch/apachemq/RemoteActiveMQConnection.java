@@ -89,6 +89,7 @@ public class RemoteActiveMQConnection
                 .add( "trace", false )
                 .add( "daemon", true )
                 .add( "soTimeout", 30000 )
+                .add( "jms.watchTopicAdvisories", false )
                 .endQuery()
                 .build();
 //        brokerUri = "tcp://" + Objects.requireNonNull( server )
