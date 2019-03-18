@@ -88,7 +88,7 @@ public class RemoteActiveMQConnection
                 .query()
                 .add( "trace", false )
                 .add( "daemon", true )
-                .add( "soTimeout", 30000 )
+                //.add( "soTimeout", 30000 )
                 .add( "jms.watchTopicAdvisories", false )
                 .endQuery()
                 .build();
