@@ -91,7 +91,7 @@ public class RemoteActiveMQConnection
                 //.add( "soTimeout", 30000 )
                 .add( "jms.watchTopicAdvisories", false )
                 // Disable inactivity monitor
-                .add( "transport.useInactivityMonitor", false)
+                .add( "wireFormat.maxInactivityDuration", 0)
                 .endQuery()
                 .build();
 //        brokerUri = "tcp://" + Objects.requireNonNull( server )
