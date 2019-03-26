@@ -77,7 +77,7 @@ class TopicClient
             session = connection.getConnection().
                     createSession( false, Session.AUTO_ACKNOWLEDGE );
             topic = session.createTopic( topicName );
-            messageConsumer = session.createDurableSubscriber( topic, connection.getClientId() );
+            messageConsumer = session.createDurableSubscriber( topic, topicName + connection.getUsername() );
             if( thread == null )
             {
                 thread = new Thread( () ->
