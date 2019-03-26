@@ -103,6 +103,11 @@ public class RemoteActiveMQConnection
         connection = null;
     }
 
+    String getBrokerUri()
+    {
+      return brokerUri;
+    }
+
     Connection getConnection()
     {
         return connection;
@@ -111,6 +116,11 @@ public class RemoteActiveMQConnection
     String getUsername()
     {
         return username;
+    }
+
+    String getClientId()
+    {
+      return clientId;
     }
 
     public boolean isRunning()

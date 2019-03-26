@@ -77,12 +77,12 @@ class TopicClient
             session = connection.getConnection().
                     createSession( false, Session.AUTO_ACKNOWLEDGE );
             topic = session.createTopic( topicName );
-            messageConsumer = session.createDurableSubscriber( topic, topicName + connection.getUsername() );
+            messageConsumer = session.createDurableSubscriber( topic, connection.getClientId() );
             if( thread == null )
             {
                 thread = new Thread( () ->
                 {
-                    LOG.info( () -> "Starting to receive from " + topicName );
+                    LOG.info( () -> "Starting to receive from " + topicName + " on " + connection.getBrokerUri() );
                     running = true;
                     try
                     {
@@ -96,7 +96,7 @@ class TopicClient
                         }
                     } catch( Exception ex )
                     {
-                        LOG.log( Level.SEVERE, "Exception in topic " + topicName, ex );
+                        LOG.log( Level.SEVERE, "Exception in topic " + topicName + " on " + connection.getBrokerUri(), ex );
                         if( running )
                         {
                             connection.reconnect();
@@ -105,7 +105,7 @@ class TopicClient
                     {
                         thread = null;
                     }
-                    LOG.info( () -> "Receive thread for " + topicName + " terminated" );
+                    LOG.info( () -> "Receive thread for " + topicName + " terminated" + " on " + connection.getBrokerUri() );
                 } );
                 thread.start();
             }
@@ -118,7 +118,7 @@ class TopicClient
     @Override
     public TopicClient stop()
     {
-        LOG.info( () -> "Client " + topicName + " stopping" );
+        LOG.info( () -> "Client " + topicName + " on " + connection.getBrokerUri() + " stopping" );
         if( consumer != null && thread != null )
         {
             try
