@@ -86,20 +86,16 @@ class TopicClient
                     running = true;
                     try
                     {
-                        LOG.info( "start " + running );
                         while( /*connection.isRunning() &&*/ running )
                         {
-                          LOG.info( "ping " + running );
                             Message message = messageConsumer.receive( 1000L );
                             if( message != null )
                             {
                                 consumer.accept( message );
                             }
                         }
-                        LOG.info( "end " + running );
                     } catch( Exception ex )
                     {
-                        LOG.info( "error " + ex );
                         LOG.log( Level.SEVERE, "Exception in topic " + topicName + " on " + connection.getBrokerUri(), ex );
                         if( running )
                         {
