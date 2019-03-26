@@ -15,10 +15,12 @@
  */
 package uk.trainwatch.rabbitmq;
 
+import com.rabbitmq.client.AMQP;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,7 +30,8 @@ import java.util.logging.Logger;
  * @author Peter T Mount
  */
 public class RabbitConsumer
-        implements Consumer<byte[]>
+        implements Consumer<byte[]>,
+                  BiConsumer<AMQP.BasicProperties,byte[]>
 {
 
     private static final Logger LOG = Logger.getLogger( RabbitConsumer.class.getName() );
@@ -56,7 +59,13 @@ public class RabbitConsumer
     }
 
     @Override
-    public synchronized void accept( byte[] t )
+    public void accept( byte[] t )
+    {
+      accept( null, t );
+    }
+
+    @Override
+    public synchronized void accept( AMQP.BasicProperties props, byte[] t )
     {
         if( t != null ) {
             for( int attempt = 0; attempt < ATTEMPTS; attempt++ ) {
@@ -65,7 +74,7 @@ public class RabbitConsumer
                              () -> "Publishing " + t.length + " bytes to " + topic + " routing " + routingKey );
 
                     connection.getChannel( this ).
-                            basicPublish( topic, routingKey, null, t );
+                            basicPublish( topic, routingKey, props, t );
                     return;
                 }
                 catch( IOException |
