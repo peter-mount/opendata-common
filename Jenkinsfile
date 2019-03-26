@@ -6,7 +6,7 @@ def mvn = {
         ' -v "$(pwd)":/work' +
         ' -w /work' +
         ' ' + buildImage +
-        ' mvn ' + cmd
+        ' mvn --batch-mode ' + cmd
 }
 
 properties([
