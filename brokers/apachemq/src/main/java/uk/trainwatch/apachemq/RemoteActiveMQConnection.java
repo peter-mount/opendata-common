@@ -105,7 +105,7 @@ public class RemoteActiveMQConnection
 
     String getBrokerUri()
     {
-      return brokerUri;
+      return brokerUri.toString();
     }
 
     Connection getConnection()
