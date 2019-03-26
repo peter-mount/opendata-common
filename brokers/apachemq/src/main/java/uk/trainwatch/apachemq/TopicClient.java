@@ -86,7 +86,7 @@ class TopicClient
                     running = true;
                     try
                     {
-                        while( /*connection.isRunning()*/ && running )
+                        while( /*connection.isRunning() &&*/ running )
                         {
                             Message message = messageConsumer.receive( 1000L );
                             if( message != null )
