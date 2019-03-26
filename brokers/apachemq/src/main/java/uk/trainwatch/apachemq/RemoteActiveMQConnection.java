@@ -86,12 +86,12 @@ public class RemoteActiveMQConnection
                 .host( server )
                 .port( port )
                 .query()
-                .add( "trace", false )
-                .add( "daemon", true )
+                //.add( "trace", false )
+                .add( "daemon", false )
                 //.add( "soTimeout", 30000 )
                 .add( "jms.watchTopicAdvisories", false )
                 // Disable inactivity monitor
-                .add( "wireFormat.maxInactivityDuration", 0)
+                //.add( "wireFormat.maxInactivityDuration", 0)
                 .endQuery()
                 .build();
 //        brokerUri = "tcp://" + Objects.requireNonNull( server )
