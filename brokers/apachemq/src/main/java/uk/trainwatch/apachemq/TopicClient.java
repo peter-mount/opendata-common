@@ -108,6 +108,10 @@ class TopicClient
                     LOG.info( () -> "Receive thread for " + topicName + " terminated" + " on " + connection.getBrokerUri() );
                 } );
                 thread.start();
+
+                connection.getConnection().setExceptionListener(
+                  e -> LOG.info( () -> topicName + " Exception:" + e )
+                );
             }
         } catch( JMSException ex )
         {
